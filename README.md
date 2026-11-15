@@ -57,6 +57,10 @@ Cada par dura 0.6 s y el segundo golpe cae a los 0.4 s (swing de tresillo a 100 
 
 Los `*_demo.mp3` son el loop repetido 6 veces para escucharlo. Los `golpe_*` son un solo golpe de cuerda para los momentos en que pasa algo. Para regenerar o cambiar el riff: edita `PAIRS` en `tools/bass.py` y corre `python3 tools/bass.py music`.
 
+
+### Track de 5 minutos (`music/musica_bajo_5min.mp3`)
+El loop de bajo con acompañamiento ligero, para subirlo como audio a TikTok/Reels: hi-hat con swing, bombo, rimshot, chasquidos, shaker y piano eléctrico con acordes de suspenso (Re–Fa–La♭ y Sol–Si♭–Re). Va por secciones para no aburrir: intro solo bajo → entran platillos y chasquidos → groove completo → respiro con bajo y piano → groove con shaker → bajada con bombo y chasquidos → groove final → cierre con golpe. Se regenera con `python3 tools/track.py music salida.wav`.
+
 ## Cómo renderizar
 
 Requisitos: Node 18+, Chromium con Playwright y ffmpeg.
