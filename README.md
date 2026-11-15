@@ -59,7 +59,7 @@ Los `*_demo.mp3` son el loop repetido 6 veces para escucharlo. Los `golpe_*` son
 
 
 ### Track de 5 minutos (`music/musica_bajo_5min.mp3`)
-El loop de bajo con acompañamiento ligero, para subirlo como audio a TikTok/Reels: hi-hat con swing, bombo, rimshot, chasquidos, shaker y piano eléctrico con acordes de suspenso (Re–Fa–La♭ y Sol–Si♭–Re). Va por secciones para no aburrir: intro solo bajo → entran platillos y chasquidos → groove completo → respiro con bajo y piano → groove con shaker → bajada con bombo y chasquidos → groove final → cierre con golpe. Se regenera con `python3 tools/track.py music salida.wav`.
+El loop de bajo con acompañamiento ligero, para subirlo como audio a TikTok/Reels: hi-hat con swing, bombo, rimshot, chasquidos, shaker y piano eléctrico con acordes de suspenso (Re–Fa–La♭ y Sol–Si♭–Re). Va por secciones para no aburrir: intro solo bajo → entran platillos y chasquidos → groove completo → respiro con bajo y piano → groove con shaker → bajada con bombo y chasquidos → groove final → cierre con golpe. Se regenera con `python3 tools/track.py music salida.wav`. Versión corta de 2:24 (`music/musica_bajo_2min.mp3`): `python3 tools/track.py music salida.wav corto`.
 
 ## Cómo renderizar
 

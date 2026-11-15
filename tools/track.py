@@ -40,13 +40,23 @@ music = sys.argv[1]; out = sys.argv[2]
 bass1 = read(os.path.join(music, 'bajo_v1_grave_loop.wav')); bass2 = read(os.path.join(music, 'bajo_v2_menos_grave_loop.wav'))
 golpe = read(os.path.join(music, 'golpe_v1_grave.wav'))
 BASS = lp(bass1 * 0.95 + bass2 * 0.3, 1800)
-NL = 62                                                   # 62 loops = 297.6 s + ending
+SHORT = len(sys.argv) > 3 and sys.argv[3] == 'corto'
+NL = 29 if SHORT else 62                                  # 29 loops = 2:19 (+ ending) | 62 loops = 4:58
 TOTAL = int(SR * (NL * LOOP + 4.5))
 L = np.zeros(TOTAL); R = np.zeros(TOTAL)
 def put(sig, t, gl=1.0, gr=1.0):
     i = int(SR * t); j = min(TOTAL, i + len(sig)); L[i:j] += sig[:j - i] * gl; R[i:j] += sig[:j - i] * gr
 # arrangement (in loops): which layers are on
 def sec(l):
+    if SHORT:
+        if l < 2: return dict(bass=1, hat=0, snap=0, kick=0, rim=0, shk=0, keys=0)               # intro
+        if l < 6: return dict(bass=1, hat=1, snap=1, kick=0, rim=0, shk=0, keys=0)               # + hats & snaps
+        if l < 14: return dict(bass=1, hat=1, snap=0, kick=1, rim=1, shk=0, keys=(l % 4 == 2))   # groove A
+        if l < 16: return dict(bass=1, hat=0, snap=0, kick=0, rim=0, shk=0, keys=1)              # breather
+        if l < 24: return dict(bass=1, hat=1, snap=0, kick=1, rim=1, shk=1, keys=(l % 2 == 0))   # groove B
+        if l < 26: return dict(bass=1, hat=0, snap=1, kick=1, rim=0, shk=0, keys=0)              # drop
+        if l < 28: return dict(bass=1, hat=1, snap=0, kick=1, rim=1, shk=1, keys=1)              # full
+        return dict(bass=1, hat=0, snap=0, kick=0, rim=0, shk=0, keys=1)                         # outro
     if l < 4: return dict(bass=1, hat=0, snap=0, kick=0, rim=0, shk=0, keys=0)               # intro: just the bass
     if l < 12: return dict(bass=1, hat=1, snap=1, kick=0, rim=0, shk=0, keys=0)              # + hats & snaps
     if l < 28: return dict(bass=1, hat=1, snap=0, kick=1, rim=1, shk=0, keys=(l % 4 == 0))   # groove A
