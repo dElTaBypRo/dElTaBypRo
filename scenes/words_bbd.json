@@ -1,0 +1,999 @@
+{
+"words": [
+{
+"text": "Él",
+"start": 0.4,
+"end": 0.56,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "trabaja,",
+"start": 0.6,
+"end": 1.52,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "cobra...",
+"start": 1.76,
+"end": 2.4,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "y",
+"start": 2.44,
+"end": 2.56,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "le",
+"start": 2.52,
+"end": 2.64,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "quitan",
+"start": 2.64,
+"end": 2.88,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "impuestos",
+"start": 3.0,
+"end": 3.52,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "antes",
+"start": 3.68,
+"end": 4.08,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "de",
+"start": 4.12,
+"end": 4.24,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "ver",
+"start": 4.24,
+"end": 4.36,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "su",
+"start": 4.4,
+"end": 4.52,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "dinero.",
+"start": 4.56,
+"end": 4.9,
+"speaker": "narr",
+"line": "N1"
+},
+{
+"text": "¿Sueldo?",
+"start": 8.16,
+"end": 8.96,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "Yo",
+"start": 9.2,
+"end": 9.36,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "no",
+"start": 9.44,
+"end": 9.56,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "cobro",
+"start": 9.6,
+"end": 9.84,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "sueldo.",
+"start": 9.92,
+"end": 10.6,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "Yo",
+"start": 10.88,
+"end": 11.0,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "compro",
+"start": 11.04,
+"end": 11.28,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "cosas",
+"start": 11.44,
+"end": 11.84,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "que",
+"start": 11.88,
+"end": 12.0,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "suben",
+"start": 12.08,
+"end": 12.4,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "de",
+"start": 12.48,
+"end": 12.6,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "valor.",
+"start": 12.8,
+"end": 12.92,
+"speaker": "rico",
+"line": "M1"
+},
+{
+"text": "Acciones,",
+"start": 13.55,
+"end": 14.43,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "edificios,",
+"start": 14.51,
+"end": 15.63,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "empresas...",
+"start": 15.75,
+"end": 16.83,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "y",
+"start": 16.87,
+"end": 16.99,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "mientras",
+"start": 16.99,
+"end": 17.31,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "no",
+"start": 17.39,
+"end": 17.51,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "las",
+"start": 17.55,
+"end": 17.67,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "venda,",
+"start": 17.71,
+"end": 18.35,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "lo",
+"start": 18.39,
+"end": 18.51,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "que",
+"start": 18.51,
+"end": 18.63,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "ganan",
+"start": 18.67,
+"end": 18.99,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "no",
+"start": 19.23,
+"end": 19.35,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "paga",
+"start": 19.47,
+"end": 19.63,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "impuestos.",
+"start": 19.71,
+"end": 20.3,
+"speaker": "narr",
+"line": "N2"
+},
+{
+"text": "Necesito",
+"start": 23.12,
+"end": 23.6,
+"speaker": "rico",
+"line": "M2"
+},
+{
+"text": "un",
+"start": 23.68,
+"end": 23.8,
+"speaker": "rico",
+"line": "M2"
+},
+{
+"text": "millón.",
+"start": 23.84,
+"end": 24.09,
+"speaker": "rico",
+"line": "M2"
+},
+{
+"text": "¿Garantía?",
+"start": 24.46,
+"end": 25.38,
+"speaker": "banq",
+"line": "B1"
+},
+{
+"text": "Mis",
+"start": 25.85,
+"end": 26.01,
+"speaker": "rico",
+"line": "M3"
+},
+{
+"text": "cuarenta",
+"start": 26.09,
+"end": 26.45,
+"speaker": "rico",
+"line": "M3"
+},
+{
+"text": "y",
+"start": 26.49,
+"end": 26.61,
+"speaker": "rico",
+"line": "M3"
+},
+{
+"text": "ocho",
+"start": 26.65,
+"end": 26.81,
+"speaker": "rico",
+"line": "M3"
+},
+{
+"text": "edificios.",
+"start": 26.89,
+"end": 27.8,
+"speaker": "rico",
+"line": "M3"
+},
+{
+"text": "¡Aprobado!",
+"start": 28.24,
+"end": 29.16,
+"speaker": "banq",
+"line": "B2"
+},
+{
+"text": "Tres",
+"start": 29.36,
+"end": 29.52,
+"speaker": "banq",
+"line": "B2"
+},
+{
+"text": "por",
+"start": 29.68,
+"end": 29.84,
+"speaker": "banq",
+"line": "B2"
+},
+{
+"text": "ciento.",
+"start": 29.92,
+"end": 30.34,
+"speaker": "banq",
+"line": "B2"
+},
+{
+"text": "Un",
+"start": 30.84,
+"end": 30.96,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "préstamo",
+"start": 30.96,
+"end": 31.52,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "no",
+"start": 31.68,
+"end": 31.8,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "es",
+"start": 31.84,
+"end": 31.96,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "ingreso...",
+"start": 32.0,
+"end": 32.88,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "así",
+"start": 33.0,
+"end": 33.16,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "que",
+"start": 33.2,
+"end": 33.36,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "no",
+"start": 33.6,
+"end": 33.72,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "paga",
+"start": 33.76,
+"end": 33.92,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "impuestos.",
+"start": 34.0,
+"end": 34.56,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "Vive",
+"start": 35.04,
+"end": 35.2,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "como",
+"start": 35.28,
+"end": 35.44,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "rey",
+"start": 35.6,
+"end": 35.84,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "con",
+"start": 35.92,
+"end": 36.04,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "dinero",
+"start": 36.08,
+"end": 36.32,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "prestado,",
+"start": 36.4,
+"end": 37.12,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "mientras",
+"start": 37.16,
+"end": 37.44,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "sus",
+"start": 37.52,
+"end": 37.64,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "edificios",
+"start": 37.68,
+"end": 38.32,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "siguen",
+"start": 38.48,
+"end": 38.8,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "subiendo.",
+"start": 38.88,
+"end": 39.27,
+"speaker": "narr",
+"line": "N3"
+},
+{
+"text": "¿Y",
+"start": 39.769,
+"end": 39.889,
+"speaker": "asal",
+"line": "A1"
+},
+{
+"text": "si",
+"start": 39.94,
+"end": 40.1,
+"speaker": "asal",
+"line": "A1"
+},
+{
+"text": "yo",
+"start": 40.18,
+"end": 40.34,
+"speaker": "asal",
+"line": "A1"
+},
+{
+"text": "pido",
+"start": 40.42,
+"end": 40.58,
+"speaker": "asal",
+"line": "A1"
+},
+{
+"text": "un",
+"start": 40.66,
+"end": 40.78,
+"speaker": "asal",
+"line": "A1"
+},
+{
+"text": "préstamo?",
+"start": 40.78,
+"end": 41.34,
+"speaker": "asal",
+"line": "A1"
+},
+{
+"text": "¿Y",
+"start": 41.69,
+"end": 41.81,
+"speaker": "banq",
+"line": "B3"
+},
+{
+"text": "tu",
+"start": 41.93,
+"end": 42.05,
+"speaker": "banq",
+"line": "B3"
+},
+{
+"text": "garantía?",
+"start": 42.09,
+"end": 42.86,
+"speaker": "banq",
+"line": "B3"
+},
+{
+"text": "...¿Mi",
+"start": 43.48,
+"end": 43.72,
+"speaker": "asal",
+"line": "A2"
+},
+{
+"text": "bici?",
+"start": 43.76,
+"end": 44.52,
+"speaker": "asal",
+"line": "A2"
+},
+{
+"text": "¡Jajaja!",
+"start": 45.408,
+"end": 46.4,
+"speaker": "gordo",
+"line": "G1"
+},
+{
+"text": "¡Yo",
+"start": 46.674,
+"end": 46.794,
+"speaker": "gordo",
+"line": "G1"
+},
+{
+"text": "quiero",
+"start": 46.8,
+"end": 47.12,
+"speaker": "gordo",
+"line": "G1"
+},
+{
+"text": "diez!",
+"start": 47.28,
+"end": 47.92,
+"speaker": "gordo",
+"line": "G1"
+},
+{
+"text": "Y",
+"start": 49.44,
+"end": 49.56,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "cuando",
+"start": 49.54,
+"end": 49.78,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "por",
+"start": 49.86,
+"end": 49.98,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "fin",
+"start": 50.1,
+"end": 50.26,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "muere...",
+"start": 50.34,
+"end": 51.22,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "sus",
+"start": 51.3,
+"end": 51.42,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "herederos",
+"start": 51.46,
+"end": 51.86,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "reciben",
+"start": 51.94,
+"end": 52.34,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "todo,",
+"start": 52.5,
+"end": 53.22,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "y",
+"start": 53.26,
+"end": 53.38,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "el",
+"start": 53.34,
+"end": 53.46,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "valor",
+"start": 53.46,
+"end": 53.7,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "se",
+"start": 53.78,
+"end": 53.9,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "reinicia,",
+"start": 53.94,
+"end": 54.74,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "como",
+"start": 54.82,
+"end": 54.94,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "si",
+"start": 54.98,
+"end": 55.1,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "lo",
+"start": 55.1,
+"end": 55.22,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "compraran",
+"start": 55.22,
+"end": 55.7,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "hoy.",
+"start": 55.78,
+"end": 56.0,
+"speaker": "narr",
+"line": "N4"
+},
+{
+"text": "Venden",
+"start": 56.67,
+"end": 56.95,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "un",
+"start": 56.99,
+"end": 57.11,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "poquito,",
+"start": 57.11,
+"end": 57.91,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "pagan",
+"start": 57.99,
+"end": 58.15,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "el",
+"start": 58.19,
+"end": 58.31,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "préstamo...",
+"start": 58.31,
+"end": 59.11,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "y",
+"start": 59.15,
+"end": 59.27,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "el",
+"start": 59.23,
+"end": 59.35,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "juego",
+"start": 59.43,
+"end": 59.75,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "vuelve",
+"start": 59.91,
+"end": 60.23,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "a",
+"start": 60.27,
+"end": 60.39,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "empezar.",
+"start": 60.35,
+"end": 60.71,
+"speaker": "narr",
+"line": "N5"
+},
+{
+"text": "Compra.",
+"start": 61.57,
+"end": 61.89,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "Pide",
+"start": 62.13,
+"end": 62.37,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "prestado.",
+"start": 62.45,
+"end": 63.01,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "Muere.",
+"start": 63.49,
+"end": 64.21,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "¿Es",
+"start": 64.53,
+"end": 64.69,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "legal?",
+"start": 64.89,
+"end": 65.33,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "Sí.",
+"start": 65.57,
+"end": 65.81,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "¿Es",
+"start": 66.29,
+"end": 66.45,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "justo?...",
+"start": 66.53,
+"end": 67.57,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "Tú",
+"start": 67.61,
+"end": 67.73,
+"speaker": "narr",
+"line": "N6"
+},
+{
+"text": "dime.",
+"start": 67.73,
+"end": 68.25,
+"speaker": "narr",
+"line": "N6"
+}
+],
+"lines": [
+{
+"id": "N1",
+"speaker": "narr",
+"start": 0.4,
+"end": 4.9
+},
+{
+"id": "M1",
+"speaker": "rico",
+"start": 8.0,
+"end": 12.88
+},
+{
+"id": "N2",
+"speaker": "narr",
+"start": 13.4,
+"end": 20.3
+},
+{
+"id": "M2",
+"speaker": "rico",
+"start": 22.8,
+"end": 24.09
+},
+{
+"id": "B1",
+"speaker": "banq",
+"start": 24.3,
+"end": 25.39
+},
+{
+"id": "M3",
+"speaker": "rico",
+"start": 25.7,
+"end": 27.77
+},
+{
+"id": "B2",
+"speaker": "banq",
+"start": 28.2,
+"end": 30.38
+},
+{
+"id": "N3",
+"speaker": "narr",
+"start": 30.8,
+"end": 39.27
+},
+{
+"id": "A1",
+"speaker": "asal",
+"start": 39.7,
+"end": 41.43
+},
+{
+"id": "B3",
+"speaker": "banq",
+"start": 41.7,
+"end": 42.81
+},
+{
+"id": "A2",
+"speaker": "asal",
+"start": 43.3,
+"end": 44.52
+},
+{
+"id": "G1",
+"speaker": "gordo",
+"start": 45.2,
+"end": 47.92
+},
+{
+"id": "N4",
+"speaker": "narr",
+"start": 49.4,
+"end": 56.0
+},
+{
+"id": "N5",
+"speaker": "narr",
+"start": 56.6,
+"end": 60.71
+},
+{
+"id": "N6",
+"speaker": "narr",
+"start": 61.3,
+"end": 68.21
+}
+]
+}

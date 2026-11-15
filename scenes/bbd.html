@@ -1,0 +1,247 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}#gl{position:absolute;left:0;top:0;visibility:hidden}#out{position:absolute;left:0;top:0}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas><canvas id="out" width="1080" height="1920"></canvas>
+<script type="module">
+// "Compra, pide prestado, muere" — parody explainer. Timeline is driven by words_bbd.json (lines + word timings).
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createCity } from '../kit/citykit.js';
+const W = 1080, H = 1920; const Q = new URLSearchParams(location.search); const SUBMAX = +(Q.get('sub') || 2);
+const kit = createKit(THREE, RoundedBoxGeometry);
+const MAT = (c, k = 'cloth') => kit.makeMat(c, k, 'clay');
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const sm = (a, b, t) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+const win = (a, b, t, f = 0.2) => sm(a, a + f, t) * (1 - sm(b - f, b, t));
+const lerp = (a, b, x) => a + (b - a) * x;
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const add = (p, g, m, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; p.add(o); return o; };
+
+const DATA = await (await fetch('./words_bbd.json')).json();
+const words = DATA.words; const LN = Object.fromEntries(DATA.lines.map(l => [l.id, l]));
+const wAt = (line, txt) => { const n = s => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]/g, ''); const w = words.find(w => w.line === line && n(w.text) === n(txt)); return w ? w.start : LN[line].start; };
+const END = 71.5;
+
+// ---------- renderer ----------
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.95;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+const env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture;
+const out = document.getElementById('out').getContext('2d');
+await document.fonts.load('900 90px Inter');
+const camera = new THREE.PerspectiveCamera(42, W / H, 0.05, 500);
+
+// ================= CITY SCENE =================
+const SC = new THREE.Scene(); SC.environment = env; SC.environmentIntensity = 0.45;
+const skyDay = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 512; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, '#6fa3dc'); gr.addColorStop(0.6, '#bcd6ee'); gr.addColorStop(1, '#f2e2c8'); g.fillStyle = gr; g.fillRect(0, 0, 4, 512); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const skyNight = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 512; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, '#060a1a'); gr.addColorStop(0.6, '#16213f'); gr.addColorStop(1, '#3a3050'); g.fillStyle = gr; g.fillRect(0, 0, 4, 512); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const fogDay = new THREE.Fog(0xd8dde4, 50, 140), fogNight = new THREE.Fog(0x16213f, 30, 110);
+const hemi = new THREE.HemisphereLight(0xfff0dc, 0x5a5a66, 0.9); SC.add(hemi);
+const sun = new THREE.DirectionalLight(0xffe2c0, 2.8); sun.position.set(25, 40, 30); sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.radius = 5; sun.shadow.bias = -0.0004;
+Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 140 }); SC.add(sun);
+const city = createCity(THREE, kit, { finish: 'clay', progress: 0.0, people: 20 }); SC.add(city.group);
+const glassMats = []; city.group.traverse(o => { if (o.isMesh && o.material.isMeshPhysicalMaterial && o.material.metalness === 0.2 && !glassMats.includes(o.material)) glassMats.push(o.material); });
+const bulbs = city.lights.map(l => l.userData.bulb);
+const nightLights = []; for (const x of [-12, 0, 12]) { const p = new THREE.PointLight(0xffd59a, 0, 16); p.position.set(x - 1, 5, -4.6); SC.add(p); nightLights.push(p); }
+function setNight(k) {
+  SC.background = k > 0.5 ? skyNight : skyDay; SC.fog = k > 0.5 ? fogNight : fogDay;
+  hemi.intensity = lerp(0.9, 0.25, k); sun.intensity = lerp(2.8, 0.25, k); sun.color.set(k > 0.5 ? 0x8fa8ff : 0xffe2c0); SC.environmentIntensity = lerp(0.45, 0.12, k);
+  for (const m of glassMats) { m.emissive = m.emissive || new THREE.Color(); m.emissive.set(0xffc870); m.emissiveIntensity = 0.55 * k; }
+  for (const b of bulbs) b.material.emissiveIntensity = lerp(1.2, 4.0, k);
+  for (const p of nightLights) p.intensity = 30 * k;
+}
+const OFFICE = city.bank.userData.officeStand.clone().add(city.bank.position);
+// cast
+const rico = kit.build(kit.PRESETS.rico, 'clay'); SC.add(rico);
+const banq = kit.build(kit.PRESETS.banquero, 'clay'); SC.add(banq);
+const asal = kit.build(kit.PRESETS.asalariado, 'clay'); SC.add(asal);
+const gordo = kit.build(kit.PRESETS.gordo, 'clay'); SC.add(gordo);
+const heirs = [1, 2].map(i => { const p = kit.build(kit.deepMerge(kit.townsperson(40 + i), { outfit: { type: 'suit', top: '#16161a', pants: '#16161a', tie: '#16161a', inner: '#ffffff' }, expression: 'grin', glasses: { style: 'shades' } }), 'clay'); SC.add(p); return p; });
+// props
+function phoneProp(lines) {
+  const g = new THREE.Group(); add(g, kit.rbox(0.75, 1.5, 0.08, 0.1), MAT('#1c1e22', 'leather'));
+  const c = document.createElement('canvas'); c.width = 512; c.height = 1024; const x = c.getContext('2d'); x.fillStyle = '#f4f6fa'; x.fillRect(0, 0, 512, 1024);
+  x.fillStyle = '#1a73e8'; x.fillRect(0, 0, 512, 150); x.fillStyle = '#fff'; x.font = 'bold 54px Inter'; x.fillText('Mi banco', 40, 100);
+  let y = 270; for (const [t, v, col] of lines) { x.fillStyle = '#5a6475'; x.font = '40px Inter'; x.fillText(t, 40, y); x.fillStyle = col; x.font = 'bold 66px Inter'; x.fillText(v, 40, y + 80); y += 220; }
+  const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; add(g, new THREE.PlaneGeometry(0.66, 1.38), new THREE.MeshBasicMaterial({ map: tx }), 0, 0, 0.042); return g;
+}
+const asalPhone = phoneProp([['SUELDO', '$15,000', '#1a1a1a'], ['IMPUESTOS', '−$2,400', '#d93025'], ['TE QUEDA', '$12,600', '#188038']]); asalPhone.scale.setScalar(0.3); SC.add(asalPhone);
+const bike = (() => { const g = new THREE.Group(); const m = MAT('#d6342c', 'leather'), dk = MAT('#1c1f24', 'leather'); for (const x of [-0.55, 0.55]) { add(g, new THREE.TorusGeometry(0.34, 0.035, 8, 28), dk, x, 0.36, 0); }
+  const tube = (a, b, rr = 0.03) => { const d = b.clone().sub(a); const o = add(g, new THREE.CylinderGeometry(rr, rr, d.length(), 8), m); o.position.copy(a.clone().add(b).multiplyScalar(0.5)); o.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); };
+  tube(V(-0.55, 0.36, 0), V(-0.05, 0.75, 0)); tube(V(-0.05, 0.75, 0), V(0.45, 0.8, 0)); tube(V(-0.55, 0.36, 0), V(0.1, 0.36, 0)); tube(V(0.1, 0.36, 0), V(-0.05, 0.75, 0)); tube(V(0.1, 0.36, 0), V(0.45, 0.8, 0)); tube(V(0.45, 0.8, 0), V(0.55, 0.36, 0));
+  add(g, kit.rbox(0.22, 0.05, 0.1, 0.02), dk, -0.08, 0.82, 0); add(g, kit.rbox(0.05, 0.05, 0.4, 0.02), dk, 0.47, 0.98, 0); return g; })(); SC.add(bike);
+const glass = add(banq.userData.rig.wristR, new THREE.CylinderGeometry(0.035, 0.025, 0.12, 12), new THREE.MeshPhysicalMaterial({ color: 0xfff2c0, roughness: 0.1, transparent: true, opacity: 0.8 }), 0, -0.13, 0.05); glass.visible = false;
+const key = (() => { const g = new THREE.Group(); const gm = MAT('#e0b84a', 'leather'); add(g, new THREE.TorusGeometry(0.35, 0.09, 12, 32), gm, 0, 0.55, 0); add(g, kit.rbox(0.12, 1.1, 0.08, 0.03), gm, 0, -0.2, 0); add(g, kit.rbox(0.3, 0.1, 0.08, 0.03), gm, 0.14, -0.6, 0); add(g, kit.rbox(0.22, 0.1, 0.08, 0.03), gm, 0.1, -0.4, 0); return g; })(); SC.add(key);
+// ten towers that pop up behind the street
+const towers = new THREE.Group(); SC.add(towers); const towerMats = ['#d9b14a', '#c9a24a', '#b8945a'];
+for (let i = 0; i < 10; i++) { const tw = new THREE.Group(); const h = 38 + (i % 3) * 9; add(tw, kit.rbox(5, h, 5, 0.3), MAT(towerMats[i % 3], 'leather'), 0, h / 2, 0); for (let f = 2; f < h; f += 2.6) add(tw, kit.rbox(5.05, 0.5, 5.05, 0.1), new THREE.MeshPhysicalMaterial({ color: 0x2c4a70, roughness: 0.1, metalness: 0.2, clearcoat: 1 }), 0, f, 0); tw.position.set(46 + i * 4.5, 0, (i % 2 ? -1 : 1) * (11 + (i % 3) * 3)); tw.userData.h = h; towers.add(tw); }
+
+// ================= STAGE SCENE (abstract) =================
+const ST = new THREE.Scene(); ST.background = new THREE.Color(0x0d1530); ST.environment = env; ST.environmentIntensity = 0.5;
+ST.add(new THREE.HemisphereLight(0xbcd0ff, 0x101830, 0.9)); { const k = new THREE.SpotLight(0xffffff, 120, 30, 0.5, 0.5); k.position.set(2, 10, 6); k.castShadow = true; k.target.position.set(0, 0, 0); ST.add(k, k.target); }
+{ const grid = new THREE.GridHelper(60, 60, 0x2fd0ff, 0x1a5a8a); grid.material.transparent = true; grid.material.opacity = 0.55; ST.add(grid); const fl = new THREE.Mesh(new THREE.CircleGeometry(30, 64), new THREE.MeshStandardMaterial({ color: 0x0f1a3a, roughness: 0.9 })); fl.rotation.x = -Math.PI / 2; fl.position.y = -0.01; fl.receiveShadow = true; ST.add(fl); }
+const ricoS = kit.build(kit.PRESETS.rico, 'clay'); ST.add(ricoS);
+const cash = []; for (let i = 0; i < 6; i++) { const c = new THREE.Group(); const m = MAT('#4f9a4a'); add(c, kit.rbox(0.9, 1, 0.5, 0.05), m, 0, 0.5, 0); add(c, kit.rbox(0.92, 0.12, 0.52, 0.02), MAT('#f2e8c8'), 0, 0.5, 0); c.position.set(-2.2 + (i % 3) * 1.0, 0, -0.6 - Math.floor(i / 3) * 0.7); ST.add(c); cash.push(c); }
+const minis = []; for (let i = 0; i < 4; i++) { const b = new THREE.Group(); add(b, kit.rbox(0.7, 1, 0.7, 0.08), MAT(['#d9cbb3', '#c98f6a', '#b8c4cc', '#d6b98f'][i]), 0, 0.5, 0); b.position.set(1.4 + (i % 2) * 0.9, 0, -0.5 - Math.floor(i / 2) * 0.9); ST.add(b); minis.push(b); }
+
+// ================= helpers =================
+function hide(...cs) { for (const c of cs) c.position.set(0, -80, 0); }
+function placeOn(c, x, z, ry = 0, y = city.SIDEWALK_Y) { c.position.set(x, y, z); c.rotation.set(0, ry, 0); }
+function armPhone(c) { c.userData.rig.shoulderR.rotation.set(-1.0, 0, -0.3); c.userData.rig.elbowR.rotation.set(-1.4, 0, 0); kit.setHand(c, 'R', 'grab'); }
+function attachToHand(obj, c, off = V(0, -0.14, 0.06)) { c.updateMatrixWorld(true); const p = off.clone(); c.userData.rig.wristR.localToWorld(p); obj.position.copy(p); }
+const T = {
+  carStart: LN.N1.end + 0.05, door: 7.0, m1: LN.M1.start, n2: LN.N2.start, bankUp: 20.5, office: LN.M2.start - 0.25, n3: LN.N3.start - 0.25, a1: LN.A1.start - 0.3,
+  gordo: 45.0, n4: LN.N4.start - 0.3, n5: LN.N5.start - 0.25, n6: LN.N6.start - 0.3,
+};
+const ASAL = { x: -9, z: -5.6 };
+
+// ================= shots =================
+const SHOTS = [
+  { t: 0, sub: 1, f: (t, a, b) => { // 1. salaried guy checks his paycheck
+    setNight(0); city.site.userData.progress = 0.0; hide(rico, banq, gordo, ...heirs, bike, key); towers.visible = false;
+    placeOn(asal, ASAL.x, ASAL.z, 0.25); kit.setPose(asal, 'idle', t); armPhone(asal); kit.setExpression(asal, t > wAt('N1', 'impuestos') ? 'sad' : 'worried'); attachToHand(asalPhone, asal); asalPhone.rotation.set(-0.35, 0.25, 0); asalPhone.visible = true;
+    const ins = sm(2.4, 2.9, t); const head = V(ASAL.x, 2.1, ASAL.z);
+    const p0 = V(ASAL.x + 1.4, 1.9, ASAL.z + 4.2).lerp(V(ASAL.x + 0.9, 1.9, ASAL.z + 3.0), sm(a, 2.4, t)); const p1 = asalPhone.position.clone().add(V(0.14, 0.06, 0.8));
+    camera.position.copy(p0.lerp(p1, ins)); camera.lookAt(head.lerp(asalPhone.position, ins)); camera.fov = lerp(40, 34, ins); return SC; } },
+  { t: T.carStart, sub: SUBMAX, f: (t, a, b) => { setNight(0); // 2. the limo drives straight at the camera
+    hide(rico, banq, gordo, ...heirs, bike, key); asalPhone.visible = false; placeOn(asal, ASAL.x, ASAL.z, 0.9); kit.setPose(asal, 'idle', t); kit.setExpression(asal, 'surprised');
+    const u = clamp((t - a) / (T.door - 0.2 - a)); const x = lerp(-34, 2.0, 1 - Math.pow(1 - u, 2.2)); city.limo.position.x = x; city.limo.userData.setDoor(0);
+    camera.position.set(14, 0.9, -2.0); camera.lookAt(-6, 1.3, -2.3); camera.fov = 38; return SC; } },
+  { t: T.door - 0.15, sub: 1, f: (t, a, b) => { setNight(0); // 3. door opens, the millionaire steps out
+    city.limo.position.x = 2.0; city.limo.userData.setDoor(1.2 * sm(T.door - 0.1, T.door + 0.4, t));
+    const out = sm(T.door + 0.2, T.door + 1.1, t); placeOn(rico, lerp(1.5, 1.7, out), lerp(-1.6, -0.2, out), 0.2, 0);
+    kit.setPose(rico, t < T.m1 ? 'walk' : t < wAt('M1', 'compro') ? 'rubHands' : 'presenting', t); kit.setExpression(rico, 'smug');
+    const lo = V(4.6, 0.6, 3.6).lerp(V(3.9, 0.75, 3.1), sm(a, b, t)); camera.position.copy(lo); camera.lookAt(1.7, 1.8 + 0.2 * out, -0.4); camera.fov = 42; return SC; } },
+  { t: T.n2 - 0.3, sub: 1, f: (t, a, b) => { setNight(0); // 4. the building rises while he watches
+    city.site.userData.progress = sm(T.n2, LN.N2.end + 0.4, t); placeOn(rico, -1.5, 5.9, 0, city.SIDEWALK_Y); kit.setPose(rico, 'handsBehind', t); kit.setExpression(rico, 'smug');
+    const cr = sm(a, b, t); camera.position.set(-1.0 + cr * 1.5, 1.0 + cr * 2.5, 1.2 - cr * 0.6); camera.lookAt(-4, 6 + cr * 6, 13); camera.fov = 48; return SC; } },
+  { t: T.bankUp, sub: 1, f: (t, a, b) => { setNight(0); // 5. the banker looks down from his balcony
+    city.site.userData.progress = 1; hide(rico); placeOn(banq, OFFICE.x, OFFICE.z, 0, OFFICE.y); kit.setPose(banq, 'lookDown', t); kit.setExpression(banq, 'smug');
+    camera.position.copy(V(OFFICE.x - 2.2, 1.4, -0.5).lerp(V(OFFICE.x - 1.6, 2.4, -1.2), sm(a, b, t))); camera.lookAt(OFFICE.x, OFFICE.y + 1.4, OFFICE.z); camera.fov = 46; return SC; } },
+  { t: T.office, sub: 1, f: (t, a, b) => { setNight(0); // 6. the deal in the office: shot / reverse-shot per line
+    placeOn(banq, OFFICE.x - 0.7, OFFICE.z - 0.1, 0.5, OFFICE.y); placeOn(rico, OFFICE.x + 0.8, OFFICE.z, -0.55, OFFICE.y);
+    const approved = t > LN.B2.start - 0.05;
+    kit.setPose(rico, approved ? 'handshake' : t > LN.M3.start ? 'phone' : 'idle', t); kit.setExpression(rico, approved ? 'grin' : 'smug');
+    kit.setPose(banq, approved ? 'handshake' : t > LN.B1.start ? 'think' : 'handsBehind', t); kit.setExpression(banq, approved ? 'grin' : 'smug');
+    const onBanker = (t > LN.B1.start - 0.1 && t < LN.M3.start - 0.1) || (t > LN.B2.start - 0.1 && t < LN.B2.start + 1.0);
+    const tgt = onBanker ? banq : rico; const hp = tgt.position.clone().add(V(0, 1.75, 0));
+    if (approved && t > LN.B2.start + 1.0) { camera.position.set(OFFICE.x + 0.1, OFFICE.y + 2.0, OFFICE.z + 5.0); camera.lookAt(OFFICE.x, OFFICE.y + 1.3, OFFICE.z); camera.fov = 40; }
+    else { const side = onBanker ? 1 : -1; camera.position.copy(hp.clone().add(V(side * 0.9, 0.05, 2.2))); camera.lookAt(hp); camera.fov = 36; }
+    return SC; } },
+  { t: T.n3, sub: 1, f: (t, a, b) => { // 7. abstract stage: borrowed money, no tax
+    ricoS.position.set(0, 0, 0.6); kit.setPose(ricoS, t < wAt('N3', 'vive') ? 'countMoney' : 'rubHands', t); kit.setExpression(ricoS, 'grin');
+    cash.forEach((c, i) => { c.scale.set(1, Math.max(0.01, sm(a + 0.2 + i * 0.15, a + 0.8 + i * 0.15, t) * (1 + 0.6 * sm(wAt('N3', 'vive'), wAt('N3', 'vive') + 1.5, t))), 1); });
+    minis.forEach((m, i) => { m.scale.set(1, Math.max(0.01, 0.6 + 2.2 * sm(wAt('N3', 'edificios') + i * 0.12, wAt('N3', 'subiendo') + 0.6, t)), 1); });
+    const o = lerp(-0.25, 0.25, sm(a, b, t)); camera.position.set(Math.sin(o) * 6.5, 2.6, Math.cos(o) * 6.5); camera.lookAt(0, 1.2, -0.4); camera.fov = 42; return ST; } },
+  { t: T.a1, sub: 1, f: (t, a, b) => { setNight(0); // 8. the salaried guy asks too
+    hide(rico); placeOn(banq, OFFICE.x, OFFICE.z, 0, OFFICE.y); placeOn(asal, OFFICE.x + 0.5, -5.2, Math.PI, city.SIDEWALK_Y);
+    kit.setPose(banq, t > LN.B3.start - 0.1 ? 'crossed' : 'lookDown', t); kit.setExpression(banq, 'smug');
+    const bikeOn = t > LN.A2.start - 0.2; kit.setPose(asal, bikeOn ? 'shrug' : 'presenting', t); kit.setExpression(asal, bikeOn ? 'worried' : 'happy');
+    bike.position.set(OFFICE.x + 1.6, city.SIDEWALK_Y, -5.0); bike.rotation.y = 0.4; bike.visible = bikeOn;
+    if (t < LN.B3.start - 0.1) { camera.position.set(OFFICE.x + 1.2, 8.5, -1.0); camera.lookAt(asal.position.clone().add(V(0, 1.0, 0))); camera.fov = 46; }       // seen from above
+    else if (t < LN.A2.start - 0.25) { camera.position.set(OFFICE.x - 1.6, 1.4, -1.5); camera.lookAt(OFFICE.x, OFFICE.y + 1.5, OFFICE.z); camera.fov = 44; }                          // banker from below
+    else { camera.position.set(OFFICE.x + 3.3, 1.5, -1.2); camera.lookAt(OFFICE.x + 1.0, 1.1, -5.0); camera.fov = 44; }                                                               // the bike
+    return SC; } },
+  { t: T.gordo, sub: 1, f: (t, a, b) => { setNight(0); // 9. the fat tycoon laughs and buys ten
+    hide(banq, bike); bike.visible = false; placeOn(asal, -7.2, -5.5, 0.3); kit.setPose(asal, 'idle', t); kit.setExpression(asal, 'shocked');
+    const walk = sm(a, a + 1.2, t); placeOn(gordo, lerp(-1.2, -5.0, walk), -5.7, -0.5); kit.setPose(gordo, walk < 1 ? 'walk' : t > wAt('G1', 'diez') ? 'thumbsUp' : 'handsUp', t); kit.setExpression(gordo, 'grin');
+    towers.visible = true; const tp = wAt('G1', 'diez'); towers.children.forEach((tw, i) => { tw.scale.y = Math.max(0.001, sm(tp - 0.2 + i * 0.12, tp + 0.4 + i * 0.12, t)); });
+    if (t < tp - 0.1) { camera.position.set(-5.8, 1.4, 1.6); camera.lookAt(-5.8, 1.8, -5.6); camera.fov = 46; } else { const k = sm(tp - 0.1, b, t); camera.position.set(-26 + k * 3, 6.5 + k, 2.5); camera.lookAt(30, 13, 0); camera.fov = 50; } return SC; } },
+  { t: T.n4, sub: 1, f: (t, a, b) => { // 10. night: the heirs inherit everything
+    setNight(1); towers.visible = true; towers.children.forEach(tw => tw.scale.y = 1); hide(asal, gordo, bike); bike.visible = false; placeOn(banq, OFFICE.x, OFFICE.z, 0, OFFICE.y); kit.setPose(banq, 'lookDown', t);
+    heirs.forEach((h, i) => { placeOn(h, -6.2 + i * 1.2, -5.8, 0.1 * (i ? -1 : 1)); kit.setPose(h, t > wAt('N4', 'reciben') ? 'handsUp' : 'idle', t); });
+    const kk = sm(wAt('N4', 'reciben') - 0.3, wAt('N4', 'reciben') + 0.4, t); key.visible = kk > 0.01; key.position.set(-5.6, 3.9 - kk * 0.4, -5.6); key.rotation.y = t * 2; key.scale.setScalar(kk);
+    camera.position.copy(V(-5.6, 2.0, 2.6).lerp(V(-5.6, 2.3, 0.6), sm(a, b, t))); camera.lookAt(-5.6, 2.6, -6.0); camera.fov = 46; return SC; } },
+  { t: T.n5, sub: 1, f: (t, a, b) => { // 11. sell a little, repay, the game restarts (time-lapse of the site)
+    setNight(0); hide(...heirs, key, banq, bike); bike.visible = false; const u = clamp((t - a) / (b - a)); city.site.userData.progress = u < 0.5 ? 1 - u * 2 : (u - 0.5) * 2;
+    placeOn(rico, -2.2, 5.7, 0.2); kit.setPose(rico, 'rubHands', t); kit.setExpression(rico, 'grin');
+    camera.position.set(lerp(0.5, -1.5, u), 1.6, lerp(0.8, 1.4, u)); camera.lookAt(-4, 9, 13); camera.fov = 56; return SC; } },
+  { t: T.n6, sub: SUBMAX, f: (t, a, b) => { // 12. crane from the worker up to the toasting banker and the aerial
+    setNight(0); hide(rico, ...heirs, key, gordo, bike); bike.visible = false; city.site.userData.progress = 1; towers.visible = true;
+    placeOn(asal, OFFICE.x + 1.5, -5.6, 0.2); kit.setPose(asal, 'idle', t); armPhone(asal); kit.setExpression(asal, 'sad'); attachToHand(asalPhone, asal); asalPhone.visible = true;
+    placeOn(banq, OFFICE.x, OFFICE.z, 0, OFFICE.y); kit.setPose(banq, 'idle', t); banq.userData.rig.shoulderR.rotation.set(-1.9, 0, 0.3); banq.userData.rig.elbowR.rotation.set(-0.8, 0, 0); kit.setHand(banq, 'R', 'grab'); glass.visible = true; kit.setExpression(banq, 'grin');
+    const u = clamp((t - a) / (b - a - 1.5)); const e = u * u * (3 - 2 * u);
+    const p = u < 0.45 ? V(OFFICE.x + 2.5, 1.8, -2.5).lerp(V(OFFICE.x + 1.5, OFFICE.y + 1.8, OFFICE.z + 3.5), sm(0, 0.45, u)) : V(OFFICE.x + 1.5, OFFICE.y + 1.8, OFFICE.z + 3.5).lerp(V(0, 55, 6), sm(0.45, 1, u));
+    const tg = u < 0.45 ? asal.position.clone().add(V(0, 1.5, 0)).lerp(V(OFFICE.x, OFFICE.y + 1.6, OFFICE.z), sm(0.12, 0.45, u)) : V(OFFICE.x, OFFICE.y + 1.6, OFFICE.z).lerp(V(0, 0, -2), sm(0.45, 1, u));
+    camera.position.copy(p); camera.lookAt(tg); camera.fov = 46; return SC; } },
+  { t: END + 3, f: null },
+];
+function shotIdx(t) { let i = 0; while (i < SHOTS.length - 2 && t >= SHOTS[i + 1].t) i++; return i; }
+let lastT = 0;
+function renderScene(t) { const i = shotIdx(t); const S = SHOTS[i].f(t, SHOTS[i].t, SHOTS[i + 1].t); city.update(t); camera.updateProjectionMatrix(); r.render(S, camera); }
+
+// ================= overlay =================
+function rr(x, y, w, h, R) { out.beginPath(); out.moveTo(x + R, y); out.arcTo(x + w, y, x + w, y + h, R); out.arcTo(x + w, y + h, x, y + h, R); out.arcTo(x, y + h, x, y, R); out.arcTo(x, y, x + w, y, R); out.closePath(); }
+const popIn = (a, t) => { const x = clamp((t - a) / 0.22); return x <= 0 ? 0 : x < 1 ? 1 + 0.25 * Math.sin(x * Math.PI) : 1; };
+const CX = W / 2 - 40;
+function pill(text, x, y, a, bg, fg, size, pop = 1) { if (a <= 0) return; out.save(); out.font = `900 ${size}px Inter`; while (out.measureText(text).width + size * 0.9 > 820 && size > 24) { size -= 2; out.font = `900 ${size}px Inter`; } if (x === W / 2) x = CX; out.globalAlpha = a; out.translate(x, y); out.scale(pop, pop); const w = out.measureText(text).width + size * 0.9, h = size * 1.45;
+  out.fillStyle = 'rgba(0,0,0,0.35)'; rr(-w / 2 + 6, -h / 2 + 8, w, h, h / 2); out.fill(); out.fillStyle = bg; rr(-w / 2, -h / 2, w, h, h / 2); out.fill(); out.fillStyle = fg; out.textAlign = 'center'; out.textBaseline = 'middle'; out.fillText(text, 0, size * 0.04); out.restore(); }
+const tag = (text, t0, t1, t, y, bg, fg, size = 52) => { if (t > t0 - 0.05 && t < t1) pill(text, W / 2, y, win(t0, t1, t, 0.12), bg, fg, size, popIn(t0, t)); };
+function bigText(text, y, size, color, a = 1, pop = 1) { if (a <= 0) return; out.save(); out.font = `900 ${size}px Inter`; while (out.measureText(text).width > 820 && size > 40) { size -= 4; out.font = `900 ${size}px Inter`; } out.globalAlpha = a; out.translate(CX, y); out.scale(pop, pop); out.textAlign = 'center'; out.textBaseline = 'middle'; out.lineJoin = 'round'; out.lineWidth = size * 0.2; out.strokeStyle = '#000'; out.strokeText(text, 0, 0); out.fillStyle = color; out.fillText(text, 0, 0); out.restore(); }
+function board(rows, t0, t1, t, y = 420) { // typed-in stat board
+  const a = win(t0, t1, t, 0.15); if (a <= 0) return; out.save(); out.globalAlpha = a; const w = 820, h = 90 + rows.length * 110; const x = CX - w / 2;
+  out.fillStyle = 'rgba(10,14,30,0.88)'; rr(x, y, w, h, 34); out.fill(); out.strokeStyle = '#d9b14a'; out.lineWidth = 5; rr(x, y, w, h, 34); out.stroke();
+  rows.forEach(([label, value, col], i) => { const ti = t0 + 0.25 + i * 0.35; if (t < ti) return; const yy = y + 80 + i * 110; out.font = '800 40px Inter'; out.fillStyle = '#c9d2e6'; out.textAlign = 'left'; out.fillText(label, x + 44, yy); out.font = '900 56px Inter'; out.fillStyle = col; out.textAlign = 'right'; out.fillText(value, x + w - 44, yy + 4); });
+  out.restore();
+}
+function phoneCard(t0, t1, t) { // "48 buildings" phone insert
+  const a = win(t0, t1, t, 0.15); if (a <= 0) return; out.save(); out.globalAlpha = a; const s = popIn(t0, t); out.translate(CX, 760); out.scale(s, s);
+  out.fillStyle = '#1c1e22'; rr(-260, -440, 520, 880, 60); out.fill(); out.fillStyle = '#f4f6fa'; rr(-235, -410, 470, 820, 40); out.fill();
+  out.fillStyle = '#16161a'; out.font = '900 44px Inter'; out.textAlign = 'center'; out.fillText('MIS PROPIEDADES', 0, -330); out.font = '900 120px Inter'; out.fillStyle = '#d9b14a'; out.fillText('48', 0, -190); out.font = '800 40px Inter'; out.fillStyle = '#5a6475'; out.fillText('EDIFICIOS', 0, -125);
+  for (let i = 0; i < 48; i++) { const cx = -190 + (i % 8) * 54, cy = -60 + Math.floor(i / 8) * 70; out.fillStyle = ['#d9cbb3', '#c98f6a', '#b8c4cc', '#d6b98f'][i % 4]; rr(cx, cy, 40, 56, 6); out.fill(); out.fillStyle = '#2c4a70'; out.fillRect(cx + 8, cy + 10, 10, 10); out.fillRect(cx + 22, cy + 10, 10, 10); out.fillRect(cx + 8, cy + 28, 10, 10); out.fillRect(cx + 22, cy + 28, 10, 10); }
+  out.restore();
+}
+// captions coloured by speaker
+const SPK = { narr: '#ffffff', rico: '#ffcf3a', banq: '#7fc8ff', asal: '#ffb98a', gordo: '#8affb0' };
+const groups = []; { let cur = []; for (const w of words) { if (cur.length && (cur.length >= 3 || cur[0].line !== w.line || /[.,?!:…]$/.test(cur.at(-1).text))) { groups.push(cur); cur = []; } cur.push(w); } if (cur.length) groups.push(cur); }
+function drawCaption(t) {
+  let g = null; for (let i = 0; i < groups.length; i++) { const s = groups[i][0].start, e = Math.min(i + 1 < groups.length ? groups[i + 1][0].start : 1e9, groups[i].at(-1).end + 0.6); if (t >= s - 0.05 && t < e) { g = groups[i]; break; } }
+  if (!g) return; const size = 92; const col = SPK[g[0].speaker] || '#fff'; out.save(); out.font = `900 ${size}px Inter`; out.textBaseline = 'middle';
+  const toks = g.map(w => w.text.toUpperCase().replace(/\.\.\.$/, '…')); const sp = size * 0.28; const ws = toks.map(s => out.measureText(s).width);
+  const lines = [[]]; let lw = 0; toks.forEach((s, i) => { if (lw + ws[i] > 820 && lines.at(-1).length) { lines.push([]); lw = 0; } lines.at(-1).push(i); lw += ws[i] + sp; });
+  const y0 = 1250 - (lines.length - 1) * size * 0.55; const pop = 1 + 0.05 * Math.max(0, 1 - (t - g[0].start) / 0.12);
+  lines.forEach((ln, li) => { const tot = ln.reduce((a, i) => a + ws[i], 0) + sp * (ln.length - 1); let x = CX - tot / 2; const y = y0 + li * size * 1.1;
+    for (const i of ln) { const w = g[i]; const active = t >= w.start - 0.03; out.save(); out.translate(x + ws[i] / 2, y); out.scale(pop, pop); out.lineJoin = 'round'; out.lineWidth = size * 0.2; out.strokeStyle = '#000'; out.strokeText(toks[i], -ws[i] / 2, 0);
+      out.fillStyle = active ? col : 'rgba(255,255,255,0.45)'; out.fillText(toks[i], -ws[i] / 2, 0); out.restore(); x += ws[i] + sp; } });
+  out.restore();
+}
+
+window.renderAt = (t) => {
+  const i = shotIdx(t); const SUB = SHOTS[i].sub || 1; const shutter = 0.5 / 30;
+  for (let k = 0; k < SUB; k++) { const ts = t - shutter / 2 + shutter * (SUB === 1 ? 0.5 : k / (SUB - 1)); renderScene(Math.max(0, ts)); out.globalAlpha = 1 / (k + 1); out.drawImage(r.domElement, 0, 0); }
+  out.globalAlpha = 1;
+  const vg = out.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)'); out.fillStyle = vg; out.fillRect(0, 0, W, H);
+  for (let j = 1; j < SHOTS.length - 1; j++) { const d = t - SHOTS[j].t; if (d >= 0 && d < 0.08) { out.fillStyle = `rgba(255,255,255,${0.35 * (1 - d / 0.08)})`; out.fillRect(0, 0, W, H); } }
+  // title + character name tags
+  tag('COMPRA · PIDE PRESTADO · MUERE', 0.2, 2.3, t, 300, '#d9b14a', '#111', 48);
+  tag('EL ASALARIADO', 0.3, 2.3, t, 420, '#ffffff', '#111', 46);
+  tag('EL MILLONARIO', T.door + 0.4, LN.M1.start + 2.5, t, 300, '#ffcf3a', '#111', 54);
+  tag('PARTE 1 · COMPRA', T.n2 - 0.2, T.n2 + 2.2, t, 300, '#ffffff', '#111', 50);
+  if (t > wAt('N2', 'acciones') - 0.05 && t < LN.N2.end + 0.3) { tag('ACCIONES', wAt('N2', 'acciones'), LN.N2.end + 0.3, t, 420, '#ffffff', '#111', 54); tag('EDIFICIOS', wAt('N2', 'edificios'), LN.N2.end + 0.3, t, 540, '#ffffff', '#111', 54); tag('EMPRESAS', wAt('N2', 'empresas'), LN.N2.end + 0.3, t, 660, '#ffffff', '#111', 54); }
+  tag('SI NO VENDE → $0 DE IMPUESTOS', wAt('N2', 'impuestos') - 0.1, T.bankUp, t, 800, '#188038', '#fff', 46);
+  tag('PARTE 2 · PIDE PRESTADO', T.bankUp + 0.1, T.office, t, 300, '#ffffff', '#111', 50);
+  tag('EL BANQUERO', T.bankUp + 0.5, T.office, t, 420, '#7fc8ff', '#111', 54);
+  phoneCard(LN.M3.start, LN.B2.start - 0.15, t);
+  if (t > LN.B2.start - 0.05 && t < T.n3) bigText('¡APROBADO!', 400, 130, '#8affb0', win(LN.B2.start - 0.05, T.n3, t, 0.1), popIn(LN.B2.start - 0.05, t));
+  board([['PRÉSTAMO', '$1,000,000', '#8affb0'], ['¿ES INGRESO?', 'NO', '#ffcf3a'], ['IMPUESTOS', '$0', '#ff6b6b']], T.n3 + 0.3, T.a1, t, 330);
+  tag('GARANTÍA: UNA BICI', LN.A2.start + 0.2, T.gordo, t, 300, '#ffb98a', '#111', 50);
+  tag('EL MAGNATE', T.gordo + 0.4, T.n4, t, 300, '#8affb0', '#111', 54);
+  if (t > wAt('G1', 'diez') - 0.05 && t < T.n4) bigText('×10 EDIFICIOS', 440, 110, '#ffcf3a', win(wAt('G1', 'diez') - 0.05, T.n4, t, 0.1), popIn(wAt('G1', 'diez') - 0.05, t));
+  tag('PARTE 3 · MUERE', T.n4 + 0.1, T.n4 + 2.6, t, 300, '#ffffff', '#111', 50);
+  board([['GANANCIAS', 'HEREDADAS', '#ffcf3a'], ['VALOR', 'SE REINICIA', '#7fc8ff'], ['IMPUESTO', '$0', '#ff6b6b']], wAt('N4', 'reinicia') - 0.2, T.n5, t, 330);
+  if (t > T.n5 && t < T.n6) { const a = win(T.n5, T.n6, t, 0.15); pill('VENDE UN POCO → PAGA EL PRÉSTAMO', W / 2, 300, a, '#ffffff', '#111', 44, popIn(T.n5, t)); if (t > wAt('N5', 'juego')) { out.save(); out.globalAlpha = a; out.translate(CX, 560); out.rotate(t * 3); out.strokeStyle = '#ffcf3a'; out.lineWidth = 22; out.beginPath(); out.arc(0, 0, 110, 0.3, Math.PI * 1.8); out.stroke(); out.fillStyle = '#ffcf3a'; out.beginPath(); out.moveTo(110 * Math.cos(0.3) + 30, 110 * Math.sin(0.3) - 10); out.lineTo(110 * Math.cos(0.3) - 34, 110 * Math.sin(0.3) - 10); out.lineTo(110 * Math.cos(0.3), 110 * Math.sin(0.3) + 40); out.closePath(); out.fill(); out.restore(); } }
+  const n6 = (w) => wAt('N6', w);
+  if (t > n6('compra') - 0.05) { const a = 1 - sm(END - 0.4, END, t);
+    pill('COMPRA', W / 2, 300, a * sm(n6('compra') - 0.05, n6('compra') + 0.1, t), '#ffffff', '#111', 64, popIn(n6('compra') - 0.05, t));
+    pill('PIDE PRESTADO', W / 2, 420, a * sm(n6('pide') - 0.05, n6('pide') + 0.1, t), '#7fc8ff', '#111', 64, popIn(n6('pide') - 0.05, t));
+    pill('MUERE', W / 2, 540, a * sm(n6('muere') - 0.05, n6('muere') + 0.1, t), '#ffcf3a', '#111', 64, popIn(n6('muere') - 0.05, t));
+    if (t > n6('legal') - 0.05) pill('¿LEGAL? SÍ', W / 2, 680, a * sm(n6('legal') - 0.05, n6('legal') + 0.1, t), '#188038', '#fff', 52, popIn(n6('legal') - 0.05, t));
+    if (t > n6('justo') - 0.05) pill('¿JUSTO? TÚ DIME', W / 2, 800, a * sm(n6('justo') - 0.05, n6('justo') + 0.1, t), '#d93025', '#fff', 52, popIn(n6('justo') - 0.05, t)); }
+  drawCaption(t);
+  return true;
+};
+window.READY = true;
+</script></body></html>
