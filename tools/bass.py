@@ -1,11 +1,12 @@
 # Plucked-bass / piano riff synthesizer (Karplus-Strong + piano partials), seamless loops.
 import numpy as np, wave, sys, os
 SR = 44100
-U = 0.2                      # grid step (s): 16th note at 75 BPM
-LOOP_UNITS = 48              # 3 bars of 4/4 -> 9.6 s
-# riff transcribed from the user's piano video (unit index, note name)
-RIFF = [(0,'G'),(2,'G'),(3,'Ab'),(5,'Ab'),(6,'G'),(8,'F'),(11,'F'),(12,'Eb'),(14,'Eb'),(18,'D'),(20,'D'),(21,'F'),(23,'F'),(24,'G'),
-        (29,'Ab'),(30,'G'),(32,'G'),(33,'F'),(35,'F'),(36,'Eb'),(38,'Eb'),(40,'D'),(42,'D'),(43,'D'),(45,'D')]
+BEAT = 0.6                   # one pair per beat (100 BPM)
+SWING = 0.4                  # second hit of each pair lands 2/3 into the beat (triplet swing)
+# riff transcribed frame-by-frame from the user's piano video: up from D to Ab and back, two hits per note
+PAIRS = ['D', 'F', 'G', 'Ab', 'G', 'F', 'Eb', 'D']
+RIFF = [(k * BEAT + h * SWING, n, h) for k, n in enumerate(PAIRS) for h in (0, 1)]
+LOOP_S = BEAT * len(PAIRS)   # 4.8 s
 SEMI = {'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11}
 def freq(name, octave): return 440.0 * 2 ** ((SEMI[name] + 12 * (octave + 1) - 69) / 12)
 rng = np.random.default_rng(7)
@@ -50,18 +51,16 @@ def reverb(x, wet=0.18, length=1.2):
     return (1 - wet) * x + wet * w
 
 def render(octave, mix_piano, sub, repeats=3):
-    total = int(SR * U * LOOP_UNITS * repeats) + SR * 2
+    total = int(SR * LOOP_S * repeats) + SR * 2
     y = np.zeros(total)
     for r in range(repeats):
-        for k, (u, n) in enumerate(RIFF):
-            nu = RIFF[k + 1][0] if k + 1 < len(RIFF) else LOOP_UNITS
-            dur = min(1.6, (nu - u) * U + 0.9)
-            vel = 1.0 if (k == 0 or RIFF[k - 1][1] != n) else 0.78      # accent first of each repeated pair
-            f = freq(n, octave)
-            seg = note(f, dur, vel, mix_piano, sub)
-            i0 = int(SR * U * (u + r * LOOP_UNITS)); y[i0:i0 + len(seg)] += seg
-    y = reverb(y)
-    return y
+        for k, (t0, n, h) in enumerate(RIFF):
+            t1 = RIFF[k + 1][0] if k + 1 < len(RIFF) else LOOP_S
+            dur = min(1.4, (t1 - t0) + 0.7)
+            vel = 1.0 if h == 0 else 0.8          # accent the first hit of each pair
+            seg = note(freq(n, octave), dur, vel, mix_piano, sub)
+            i0 = int(SR * (t0 + r * LOOP_S)); y[i0:i0 + len(seg)] += seg
+    return reverb(y)
 
 def save(path, y):
     y = y / (np.max(np.abs(y)) + 1e-9) * 0.89
@@ -70,13 +69,13 @@ def save(path, y):
 
 outdir = sys.argv[1]
 VERSIONS = [('v1_grave', 1, 0.15, 0.5), ('v2_menos_grave', 2, 0.25, 0.25), ('v3_poquito_menos_grave', 3, 0.4, 0.0)]
-L = int(SR * U * LOOP_UNITS)
+L = int(SR * LOOP_S)
 for name, octv, mixp, sub in VERSIONS:
     y = render(octv, mixp, sub, repeats=3)
     loop = y[L:2 * L].copy()                 # middle repetition: tails from the previous loop wrap in -> seamless
     save(os.path.join(outdir, f'bajo_{name}_loop.wav'), loop)
-    save(os.path.join(outdir, f'bajo_{name}_demo4x.wav'), np.tile(loop, 4))
+    save(os.path.join(outdir, f'bajo_{name}_demo4x.wav'), np.tile(loop, 6))
     # single stings (one hit + one pair) for "the rich do something" moments
-    st = np.concatenate([note(freq('G', octv), 1.4, 1.0, mixp, sub), np.zeros(int(SR * 0.1))])
+    st = np.concatenate([note(freq('D', octv), 1.4, 1.0, mixp, sub), np.zeros(int(SR * 0.1))])
     save(os.path.join(outdir, f'golpe_{name}.wav'), reverb(st))
-    print('ok', name, f'{freq("G", octv):.1f} Hz root')
+    print('ok', name, f'D={freq("D", octv):.1f} Hz .. Ab={freq("Ab", octv):.1f} Hz')

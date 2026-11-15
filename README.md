@@ -43,19 +43,19 @@ city.bank.userData.officeStand;          // dónde pararse en el balcón del ban
 
 ## Música
 
-`music/` trae el riff que tocaste en el piano, transcrito cuadro por cuadro y convertido en bajo:
+`music/` trae el riff que tocaste en el piano, detectado tecla por tecla en todos los cuadros del video (59 fps, `tools/keys.py`). Es un loop de 16 tecleos: sube de la nota más grave a la más aguda y regresa, 2 tecleos por nota:
 
-**G · G · A♭ · A♭ · G · F | F · E♭ · E♭ · D | D · F · F · G | A♭ · G · G · F | F · E♭ · E♭ · D · D · D · D**
+**D D · F F · G G · A♭ A♭ · G G · F F · E♭ E♭ · D D**
 
-Ritmo de galope en pasos de 0.2 s (75 BPM en semicorcheas); el loop dura 9.6 s y se repite sin cortes.
+Cada par dura 0.6 s y el segundo golpe cae a los 0.4 s (swing de tresillo a 100 BPM). La vuelta dura 4.8 s y se repite sin cortes.
 
 | Versión | Tono base | Archivos |
 |---|---|---|
-| 1 · grave | Sol1 (49 Hz) | `bajo_v1_grave_loop.wav`, `golpe_v1_grave.wav` |
-| 2 · menos grave | Sol2 (98 Hz) | `bajo_v2_menos_grave_loop.wav`, `golpe_v2_menos_grave.wav` |
-| 3 · un poquito menos grave | Sol3 (196 Hz) | `bajo_v3_poquito_menos_grave_loop.wav`, `golpe_v3_poquito_menos_grave.wav` |
+| 1 · grave | Re1–La♭1 (37–52 Hz) | `bajo_v1_grave_loop.wav`, `golpe_v1_grave.wav` |
+| 2 · menos grave | Re2–La♭2 (73–104 Hz) | `bajo_v2_menos_grave_loop.wav`, `golpe_v2_menos_grave.wav` |
+| 3 · un poquito menos grave | Re3–La♭3 (147–208 Hz) | `bajo_v3_poquito_menos_grave_loop.wav`, `golpe_v3_poquito_menos_grave.wav` |
 
-Los `*_demo4x.mp3` son el loop repetido 4 veces para escucharlo. Los `golpe_*` son un solo golpe de cuerda para los momentos en que pasa algo. Para regenerar o cambiar el riff: edita `RIFF` en `tools/bass.py` y corre `python3 tools/bass.py music`.
+Los `*_demo.mp3` son el loop repetido 6 veces para escucharlo. Los `golpe_*` son un solo golpe de cuerda para los momentos en que pasa algo. Para regenerar o cambiar el riff: edita `PAIRS` en `tools/bass.py` y corre `python3 tools/bass.py music`.
 
 ## Cómo renderizar
 
