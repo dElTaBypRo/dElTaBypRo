@@ -1,0 +1,341 @@
+<title>Molde de Personajes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: 3D stage on the left (top on phones), control rack on the right. */
+:root {
+  --bg: #eef1f6; --panel: #ffffff; --ink: #18202c; --muted: #5d6a7c; --line: #d9dfe8;
+  --accent: #ff5b2e; --accent-ink: #ffffff; --stage: #e3e8f0; --chip: #f2f4f8;
+  --f-display: "Space Grotesk", "Inter", system-ui, sans-serif; --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --panel: #1a2029; --ink: #e8edf4; --muted: #94a1b3; --line: #2b3441; --accent: #ff7a52; --accent-ink: #14100e; --stage: #1e2530; --chip: #222a35; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #12161d; --panel: #1a2029; --ink: #e8edf4; --muted: #94a1b3; --line: #2b3441; --accent: #ff7a52; --accent-ink: #14100e; --stage: #1e2530; --chip: #222a35; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 380px; height: 100%; }
+.stage { position: relative; background: var(--stage); min-height: 0; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.stage .badge { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 14px; font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: -0.01em; }
+.stage .badge small { display: block; font-family: var(--f-body); font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
+.stage .hint { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 12px; font-size: 12px; color: var(--muted); }
+.rack { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding-block: 14px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.group { display: flex; flex-direction: column; gap: 9px; }
+.group > h2 { font-family: var(--f-display); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 44px; align-items: center; gap: 8px; }
+.row label { font-size: 13px; color: var(--ink); }
+.row output { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); text-align: right; }
+.row.color { grid-template-columns: 96px 44px minmax(0, 1fr); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+input[type=color] { width: 44px; height: 28px; border: 1px solid var(--line); border-radius: 6px; padding: 0; background: none; cursor: pointer; }
+select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--chip); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 13px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.chip:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: inherit; font-weight: 600; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.status { font-size: 12px; color: var(--muted); min-height: 16px; }
+.saved { display: flex; flex-direction: column; gap: 6px; }
+.saved button { text-align: left; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.saved button span { color: var(--muted); font-size: 12px; }
+details > summary { cursor: pointer; font-family: var(--f-display); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::after { content: " +"; } details[open] > summary::after { content: " −"; }
+details[open] > summary { margin-bottom: 9px; }
+details .group { gap: 9px; }
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 56vh auto; height: auto; }
+  .stage { height: 56vh; }
+  .rack { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="gl" aria-label="Vista 3D del personaje"></canvas>
+    <div class="badge"><span id="charName">Jensen Huang</span><small id="charMeta">Vinilo · Contento · Quieto</small></div>
+    <div class="hint">Arrastra para girar · rueda o pellizco para acercar</div>
+  </div>
+
+  <aside class="rack" aria-label="Controles del personaje">
+    <section class="group">
+      <h2>Personaje</h2>
+      <div class="chips" id="presetChips"></div>
+      <div class="row" style="grid-template-columns:96px minmax(0,1fr)"><label for="name">Nombre</label><input type="text" id="name"></div>
+    </section>
+
+    <section class="group">
+      <h2>Escena</h2>
+      <div class="chips" id="sceneChips"></div>
+    </section>
+
+    <section class="group">
+      <h2>Acabado</h2>
+      <div class="chips" id="finishChips"></div>
+    </section>
+
+    <section class="group">
+      <h2>Expresión</h2>
+      <div class="chips" id="exprChips"></div>
+    </section>
+
+    <section class="group">
+      <h2>Pose</h2>
+      <div class="chips" id="poseChips"></div>
+    </section>
+
+    <section class="group">
+      <h2>Manos</h2>
+      <div class="row" style="grid-template-columns:96px minmax(0,1fr)"><label>Derecha</label><div class="chips" id="handRChips"></div></div>
+      <div class="row" style="grid-template-columns:96px minmax(0,1fr)"><label>Izquierda</label><div class="chips" id="handLChips"></div></div>
+    </section>
+
+    <details open><summary>Cabeza y cara</summary><div class="group" id="g-head"></div></details>
+    <details><summary>Pelo y lentes</summary><div class="group" id="g-hair"></div></details>
+    <details open><summary>Cuerpo</summary><div class="group" id="g-body"></div></details>
+    <details><summary>Ropa</summary><div class="group" id="g-outfit"></div></details>
+    <details><summary>Accesorios</summary><div class="group" id="g-acc"></div></details>
+
+    <section class="group">
+      <h2>Guardar</h2>
+      <div class="actions">
+        <button class="btn primary" id="saveBtn" type="button">Guardar personaje</button>
+        <button class="btn" id="copyBtn" type="button">Copiar ajustes</button>
+        <button class="btn" id="resetBtn" type="button">Restablecer</button>
+      </div>
+      <div class="status" id="status" role="status"></div>
+      <textarea id="copyArea" hidden rows="4" style="width:100%;font:12px ui-monospace,monospace;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px"></textarea>
+    </section>
+
+    <section class="group">
+      <h2>Guardados</h2>
+      <div class="saved" id="savedList"><div class="status">Cargando personajes guardados…</div></div>
+    </section>
+  </aside>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createKit } from './charkit.js';
+import { createCity } from './citykit.js';
+
+const kit = createKit(THREE, RoundedBoxGeometry);
+const $ = (id) => document.getElementById(id);
+const LABEL = {
+  finish: { vinyl: 'Vinilo', clay: 'Plastilina', pixar: 'Pixar' },
+  expr: { neutral: 'Neutral', happy: 'Contento', grin: 'Sonrisa', surprised: 'Sorprendido', shocked: 'En shock', angry: 'Enojado', worried: 'Preocupado', smug: 'Presumido', sad: 'Triste' },
+  pose: { idle: 'Quieto', walk: 'Caminar', point: 'Señalar', rubHands: 'Frotarse las manos', countMoney: 'Contar dinero', handshake: 'Dar la mano', handsBehind: 'Manos atrás', lookDown: 'Mirar abajo', thumbsUp: 'Pulgar arriba', phone: 'Al teléfono', shrug: 'Ni idea', handsUp: 'Manos arriba', facepalm: 'Facepalm', think: 'Pensando', crossed: 'Brazos cruzados', wave: 'Saludar', presenting: 'Presentar', podium: 'En el podio' },
+  preset: { rico: 'Millonario', banquero: 'Banquero', asalariado: 'Asalariado', gordo: 'Magnate gordo', jensen: 'Jensen', trump: 'Trump', elon: 'Elon', king: 'Stephen King', duffy: 'Sean Duffy' },
+  hair: { short: 'Corto', swoop: 'Copete', receding: 'Entradas', messy: 'Despeinado', side: 'Raya al lado', slick: 'Engominado', horseshoe: 'Calvo con lados', bob: 'Melena', bald: 'Calvo' },
+  glasses: { none: 'Sin lentes', square: 'Cuadrados', round: 'Redondos', shades: 'Lentes oscuros' },
+  outfit: { tee: 'Playera', shirt: 'Camisa', leather: 'Chamarra de cuero', suit: 'Traje y corbata', sweater: 'Suéter' },
+  beard: { none: 'Sin barba', mustache: 'Bigote', stubble: 'Barba de días' },
+  hat: { none: 'Sin sombrero', tophat: 'Sombrero de copa' },
+  hand: { auto: 'Auto', open: 'Abierta', relaxed: 'Relajada', fist: 'Puño', point: 'Señalar', thumbsUp: 'Pulgar arriba', peace: 'Dos dedos', grab: 'Agarrar', money: 'Dinero' },
+  scene: { studio: 'Estudio', street: 'Calle' },
+};
+
+// ---------- state ----------
+let state = structuredClone(kit.PRESETS.rico);
+let finish = 'clay';
+let presetId = 'rico';
+let sceneMode = 'studio';
+let city = null;
+
+// ---------- 3D ----------
+const canvas = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(renderer), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);
+camera.position.set(1.1, 1.6, 5.4);
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, 1.2, 0); controls.enableDamping = true; controls.minDistance = 1.2; controls.maxDistance = 9; controls.maxPolarAngle = Math.PI * 0.55;
+const key = new THREE.DirectionalLight(0xfff4e8, 2.2); key.position.set(2.5, 5, 4); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -2, right: 2, top: 3, bottom: -1 }); key.shadow.bias = -0.0005; scene.add(key);
+const rim = new THREE.DirectionalLight(0xbcd4ff, 1.4); rim.position.set(-4, 3, -3); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xffe2c8, 0); fill.position.set(-3, 2, 4); scene.add(fill);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(6, 64), new THREE.MeshStandardMaterial({ color: 0xdfe3ea, roughness: 0.9 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+function applyLighting() {
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light' || document.documentElement.dataset.theme === 'dark';
+  const bg = { vinyl: dark ? 0x1f2632 : 0xe6ebf3, clay: dark ? 0x2a2420 : 0xefe5d8, pixar: dark ? 0x1d2536 : 0xe2eafb }[finish];
+  scene.background = new THREE.Color(sceneMode === 'street' ? (dark ? 0x2a3550 : 0xa9c8ea) : bg); floor.material.color.set(bg).multiplyScalar(0.93);
+  scene.fog = sceneMode === 'street' ? new THREE.Fog(dark ? 0x2a3550 : 0xd8e2ee, 45, 130) : null;
+  key.shadow.camera.left = sceneMode === 'street' ? -30 : -2; key.shadow.camera.right = sceneMode === 'street' ? 30 : 2; key.shadow.camera.top = sceneMode === 'street' ? 30 : 3; key.shadow.camera.bottom = sceneMode === 'street' ? -30 : -1; key.shadow.camera.far = 120; key.position.set(sceneMode === 'street' ? 20 : 2.5, sceneMode === 'street' ? 40 : 5, sceneMode === 'street' ? 25 : 4); key.shadow.camera.updateProjectionMatrix();
+  if (finish === 'clay') { key.intensity = 2.6; key.color.set(0xffe6c8); rim.intensity = 0.5; fill.intensity = 0.6; renderer.toneMappingExposure = 0.95; scene.environmentIntensity = 0.35; key.shadow.radius = 10; }
+  else if (finish === 'pixar') { key.intensity = 1.7; key.color.set(0xfff1e0); rim.intensity = 3.2; fill.intensity = 1.1; renderer.toneMappingExposure = 1.12; scene.environmentIntensity = 1.0; key.shadow.radius = 14; }
+  else { key.intensity = 2.2; key.color.set(0xfff4e8); rim.intensity = 1.4; fill.intensity = 0; renderer.toneMappingExposure = 1.0; scene.environmentIntensity = 1.4; key.shadow.radius = 4; }
+}
+
+let char = null;
+function rebuild() {
+  if (char) { scene.remove(char); char.traverse(o => { if (o.isMesh) { o.geometry.dispose(); } }); }
+  char = kit.build(state, finish); scene.add(char);
+  if (sceneMode === 'street') {
+    if (!city || city.finish !== finish) { if (city) scene.remove(city.group); city = createCity(THREE, kit, { finish, people: 18 }); city.finish = finish; scene.add(city.group); }
+    city.group.visible = true; floor.visible = false;
+    char.position.set(-5, city.SIDEWALK_Y, -5.6); char.rotation.y = 0.35;
+  } else { if (city) city.group.visible = false; floor.visible = true; }
+  applyLighting(); updateBadge();
+}
+let rebuildTimer = null;
+const scheduleRebuild = () => { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(rebuild, 40); };
+
+function resize() { const r = canvas.parentElement.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(canvas.parentElement);
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const t = clock.getElapsedTime();
+  if (char) kit.setPose(char, state.pose, t);
+  if (sceneMode === 'street' && city) city.update(t);
+  controls.update(); renderer.render(scene, camera);
+});
+
+// ---------- controls ----------
+const get = (path) => path.split('.').reduce((o, k) => o?.[k], state);
+const set = (path, v) => { const ks = path.split('.'); let o = state; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]] ??= {}; o[ks.at(-1)] = v; };
+
+function slider(parent, path, label, min, max, step) {
+  const id = 's-' + path.replace(/\./g, '-');
+  const row = document.createElement('div'); row.className = 'row';
+  row.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}"><output for="${id}"></output>`;
+  const inp = row.querySelector('input'), out = row.querySelector('output');
+  const sync = () => { const v = get(path); inp.value = v; out.textContent = (+v).toFixed(step < 0.01 ? 3 : 2); };
+  inp.addEventListener('input', () => { set(path, +inp.value); out.textContent = (+inp.value).toFixed(step < 0.01 ? 3 : 2); scheduleRebuild(); });
+  parent.appendChild(row); syncers.push(sync);
+}
+function color(parent, path, label) {
+  const id = 'c-' + path.replace(/\./g, '-');
+  const row = document.createElement('div'); row.className = 'row color';
+  row.innerHTML = `<label for="${id}">${label}</label><input type="color" id="${id}"><output for="${id}"></output>`;
+  const inp = row.querySelector('input'), out = row.querySelector('output');
+  const sync = () => { const v = get(path) || '#000000'; inp.value = v; out.textContent = v; };
+  inp.addEventListener('input', () => { set(path, inp.value); out.textContent = inp.value; scheduleRebuild(); });
+  parent.appendChild(row); syncers.push(sync);
+}
+function select(parent, path, label, options) {
+  const id = 'o-' + path.replace(/\./g, '-');
+  const row = document.createElement('div'); row.className = 'row'; row.style.gridTemplateColumns = '96px minmax(0,1fr)';
+  row.innerHTML = `<label for="${id}">${label}</label><select id="${id}">${Object.entries(options).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>`;
+  const sel = row.querySelector('select');
+  sel.addEventListener('change', () => { set(path, sel.value); scheduleRebuild(); });
+  parent.appendChild(row); syncers.push(() => { sel.value = get(path); });
+}
+function check(parent, path, label) {
+  const id = 'k-' + path.replace(/\./g, '-');
+  const row = document.createElement('div'); row.className = 'row'; row.style.gridTemplateColumns = '96px minmax(0,1fr)';
+  row.innerHTML = `<label for="${id}">${label}</label><div><input type="checkbox" id="${id}"></div>`;
+  const inp = row.querySelector('input'); inp.addEventListener('change', () => { set(path, inp.checked); scheduleRebuild(); });
+  parent.appendChild(row); syncers.push(() => { inp.checked = !!get(path); });
+}
+function chips(parent, items, getCur, onPick) {
+  parent.innerHTML = '';
+  for (const [k, v] of Object.entries(items)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = v; b.dataset.k = k;
+    b.addEventListener('click', () => { onPick(k); refreshChips(); }); parent.appendChild(b);
+  }
+  chipSets.push(() => parent.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === getCur()))));
+}
+const syncers = [], chipSets = [];
+const refreshChips = () => chipSets.forEach(f => f());
+const syncAll = () => { syncers.forEach(f => f()); refreshChips(); $('name').value = state.name; };
+
+chips($('presetChips'), LABEL.preset, () => presetId, (k) => { presetId = k; state = structuredClone(kit.PRESETS[k]); syncAll(); rebuild(); });
+chips($('finishChips'), LABEL.finish, () => finish, (k) => { finish = k; rebuild(); });
+chips($('sceneChips'), LABEL.scene, () => sceneMode, (k) => { sceneMode = k; rebuild();
+  if (k === 'street') { controls.maxDistance = 60; controls.target.set(-5, 1.3, -5.6); camera.position.set(-1.5, 3.2, 2.8); } else { controls.maxDistance = 9; controls.target.set(0, 1.2, 0); camera.position.set(1.1, 1.6, 5.4); } });
+chips($('handRChips'), LABEL.hand, () => (state.hands?.R ?? 'auto'), (k) => { state.hands = { ...(state.hands || {}), R: k }; });
+chips($('handLChips'), LABEL.hand, () => (state.hands?.L ?? 'auto'), (k) => { state.hands = { ...(state.hands || {}), L: k }; });
+chips($('exprChips'), LABEL.expr, () => state.expression, (k) => { state.expression = k; if (char) kit.setExpression(char, k); updateBadge(); });
+chips($('poseChips'), LABEL.pose, () => state.pose, (k) => { state.pose = k; updateBadge(); });
+
+const gh = $('g-head');
+color(gh, 'skin', 'Piel');
+slider(gh, 'head.w', 'Ancho', 0.45, 0.85, 0.01); slider(gh, 'head.h', 'Alto', 0.45, 0.9, 0.01); slider(gh, 'head.d', 'Fondo', 0.4, 0.8, 0.01);
+slider(gh, 'head.round', 'Redondez', 0.02, 0.45, 0.01); slider(gh, 'head.jowl', 'Cachetes', 0, 1, 0.05);
+slider(gh, 'eyes.size', 'Ojos', 0.035, 0.09, 0.001); slider(gh, 'eyes.spacing', 'Separación', 0.09, 0.2, 0.005); slider(gh, 'eyes.open', 'Apertura', 0.3, 1.3, 0.05); slider(gh, 'eyes.tilt', 'Inclinación', -0.3, 0.3, 0.02);
+color(gh, 'eyes.iris', 'Iris');
+color(gh, 'brows.color', 'Cejas'); slider(gh, 'brows.thick', 'Grosor ceja', 0.015, 0.05, 0.001);
+slider(gh, 'nose.size', 'Nariz', 0.03, 0.09, 0.001); slider(gh, 'nose.width', 'Ancho nariz', 0.7, 1.6, 0.05);
+slider(gh, 'mouth.width', 'Boca', 0.6, 1.4, 0.05); color(gh, 'mouth.lips', 'Labios');
+const gha = $('g-hair');
+select(gha, 'hair.style', 'Peinado', LABEL.hair); color(gha, 'hair.color', 'Color pelo');
+select(gha, 'glasses.style', 'Lentes', LABEL.glasses); color(gha, 'glasses.color', 'Armazón');
+select(gha, 'beard.style', 'Barba', LABEL.beard); color(gha, 'beard.color', 'Color barba');
+const gb = $('g-body');
+slider(gb, 'body.height', 'Estatura', 0.85, 1.2, 0.01); slider(gb, 'body.shoulders', 'Hombros', 0.42, 0.78, 0.01); slider(gb, 'body.chest', 'Pecho', 0.24, 0.48, 0.01);
+slider(gb, 'body.belly', 'Panza', 0, 1, 0.05); slider(gb, 'body.arms', 'Brazos', 0.055, 0.11, 0.001); slider(gb, 'body.legs', 'Piernas', 0.07, 0.14, 0.001); slider(gb, 'body.legLen', 'Largo pierna', 0.6, 0.9, 0.01);
+const go = $('g-outfit');
+select(go, 'outfit.type', 'Prenda', LABEL.outfit);
+color(go, 'outfit.top', 'Color prenda'); color(go, 'outfit.inner', 'Camisa'); color(go, 'outfit.tie', 'Corbata'); color(go, 'outfit.pants', 'Pantalón'); color(go, 'outfit.shoes', 'Zapatos');
+check(go, 'outfit.tieOn', 'Corbata en camisa');
+{ const row = document.createElement('div'); row.className = 'row color'; row.innerHTML = '<label for="vestOn">Chaleco</label><input type="color" id="vestColor"><output><input type="checkbox" id="vestOn"> usar</output>'; go.appendChild(row);
+  const vc = row.querySelector('#vestColor'), vo = row.querySelector('#vestOn');
+  const sync = () => { vo.checked = !!state.outfit.vest; vc.value = state.outfit.vest || '#5d6470'; };
+  const apply = () => { state.outfit.vest = vo.checked ? vc.value : ''; scheduleRebuild(); };
+  vc.addEventListener('input', () => { vo.checked = true; apply(); }); vo.addEventListener('change', apply); syncers.push(sync); }
+const ga = $('g-acc');
+select(ga, 'acc.hat', 'Sombrero', LABEL.hat); color(ga, 'acc.hatColor', 'Color sombrero');
+check(ga, 'acc.watch', 'Reloj de oro'); check(ga, 'acc.chain', 'Cadena de oro'); check(ga, 'acc.badge', 'Gafete'); check(ga, 'acc.cigar', 'Puro');
+
+$('name').addEventListener('input', () => { state.name = $('name').value; updateBadge(); });
+$('resetBtn').addEventListener('click', () => { state = structuredClone(kit.PRESETS[presetId] || kit.DEFAULT); syncAll(); rebuild(); status('Restablecido a ' + (LABEL.preset[presetId] || 'la base') + '.'); });
+
+function updateBadge() {
+  $('charName').textContent = state.name || 'Sin nombre';
+  $('charMeta').textContent = `${LABEL.finish[finish]} · ${LABEL.expr[state.expression] || state.expression} · ${LABEL.pose[state.pose] || state.pose}`;
+}
+const status = (msg) => { $('status').textContent = msg; };
+
+// copy settings
+$('copyBtn').addEventListener('click', () => {
+  const txt = JSON.stringify({ finish, ...state });
+  const ta = $('copyArea');
+  navigator.clipboard?.writeText(txt).then(() => status('Ajustes copiados.'), () => { ta.hidden = false; ta.value = txt; ta.select(); status('Copia el texto seleccionado.'); })
+    ?? (ta.hidden = false, ta.value = txt, ta.select(), status('Copia el texto seleccionado.'));
+});
+
+// ---------- saving (db) ----------
+const slug = (s) => (s || 'personaje').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'personaje';
+let db = null;
+const savedList = $('savedList');
+function renderSaved(docs) {
+  savedList.innerHTML = '';
+  if (!docs.length) { savedList.innerHTML = '<div class="status">Todavía no hay personajes guardados. Ajusta uno y toca “Guardar personaje”.</div>'; return; }
+  for (const d of docs) {
+    const v = d.data(); const b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = `<b></b><span></span>`; b.querySelector('b').textContent = v.params?.name || d.id; b.querySelector('span').textContent = LABEL.finish[v.finish] || '';
+    b.addEventListener('click', () => { state = kit.deepMerge(structuredClone(kit.DEFAULT), v.params || {}); finish = v.finish || finish; presetId = ''; syncAll(); rebuild(); status('Cargado: ' + (v.params?.name || d.id)); });
+    savedList.appendChild(b);
+  }
+}
+(async () => {
+  try { db = await window.claude?.use?.('db'); } catch { db = null; }
+  if (!db) { savedList.innerHTML = '<div class="status">Para guardar personajes abre esta página con tu cuenta. Mientras tanto puedes usar “Copiar ajustes”.</div>'; $('saveBtn').disabled = true; return; }
+  const timer = setTimeout(() => { savedList.innerHTML = '<div class="status">No se pudieron cargar los guardados todavía.</div>'; }, 10000);
+  db.collection('characters').onSnapshot((snap) => { if (!snap.metadata.fromCache) clearTimeout(timer); renderSaved(snap.docs); },
+    () => { clearTimeout(timer); savedList.innerHTML = '<div class="status">No se pudieron cargar los guardados.</div>'; });
+})();
+let saving = false;
+$('saveBtn').addEventListener('click', async () => {
+  if (!db || saving) return; saving = true; status('Guardando…');
+  try { await db.doc('characters/' + slug(state.name)).set({ params: structuredClone(state), finish, savedAt: new Date().toISOString() }); status('Guardado: ' + state.name + '. Claude ya lo puede usar en los videos.'); }
+  catch (e) { status(e?.code === 'invalid_argument' ? 'Esta cuenta no tiene permiso para guardar aquí.' : 'No se pudo guardar. Intenta de nuevo.'); }
+  saving = false;
+});
+
+syncAll(); rebuild(); resize();
+</script>

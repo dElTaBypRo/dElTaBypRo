@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createCity } from '../kit/citykit.js';
+const W = 1080, H = 1920;
+const kit = createKit(THREE, RoundedBoxGeometry);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.95;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); scene.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture; scene.environmentIntensity = 0.45;
+{ const c = document.createElement('canvas'); c.width = 4; c.height = 512; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, '#6fa3dc'); gr.addColorStop(0.6, '#bcd6ee'); gr.addColorStop(1, '#f2e2c8'); g.fillStyle = gr; g.fillRect(0, 0, 4, 512); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; scene.background = t; }
+scene.fog = new THREE.Fog(0xd8dde4, 50, 140);
+scene.add(new THREE.HemisphereLight(0xfff0dc, 0x5a5a66, 0.9));
+const sun = new THREE.DirectionalLight(0xffe2c0, 2.8); sun.position.set(25, 40, 30); sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.radius = 5; sun.shadow.bias = -0.0004;
+Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 140 }); scene.add(sun);
+const city = createCity(THREE, kit, { finish: 'clay', progress: 0.55 }); scene.add(city.group);
+// cast
+const rico = kit.build(kit.PRESETS.rico, 'clay'); scene.add(rico);
+const banquero = kit.build(kit.PRESETS.banquero, 'clay'); scene.add(banquero);
+const asal = kit.build(kit.PRESETS.asalariado, 'clay'); scene.add(asal);
+const gordo = kit.build(kit.PRESETS.gordo, 'clay'); scene.add(gordo);
+const cam = new THREE.PerspectiveCamera(40, W / H, 0.1, 400);
+const SHOTS = {
+  establish: (t) => { cam.position.set(-24, 6.5, 2.5); cam.lookAt(2, 7, -6); cam.fov = 50; },
+  bankUp: (t) => { const s = city.bank.userData.officeStand.clone().add(city.bank.position); banquero.position.copy(s); kit.setPose(banquero, 'lookDown', t); kit.setExpression(banquero, 'smug');
+    cam.position.set(s.x - 2.2, 1.4, -0.5); cam.lookAt(s.x, s.y + 1.4, s.z); cam.fov = 46; },
+  carArrive: (t) => { const L = city.limo; L.userData.setDoor(1.15); const p = L.position.clone().add(new THREE.Vector3(-0.4, 0.3, 2.1)); rico.position.copy(p); rico.rotation.y = 0.2; kit.setPose(rico, 'walk', 0.5); kit.setExpression(rico, 'smug');
+    cam.position.set(L.position.x + 6.5, 1.6, L.position.z + 7.5); cam.lookAt(L.position.x - 0.6, 1.3, L.position.z + 1.2); cam.fov = 42; },
+  topDown: (t) => { cam.position.set(0, 34, 6); cam.lookAt(0, 0, 0); cam.fov = 50; },
+  construction: (t) => { city.site.userData.progress = 0.55; cam.position.set(-16, 6, -2); cam.lookAt(-4, 9, 13); cam.fov = 48; },
+  office: (t) => { const s = city.bank.userData.officeStand.clone().add(city.bank.position); banquero.position.copy(s).add(new THREE.Vector3(-0.6, 0, 0)); banquero.rotation.y = 0.35; kit.setPose(banquero, 'handshake', t); kit.setExpression(banquero, 'grin');
+    rico.position.copy(s).add(new THREE.Vector3(0.7, 0, 0.1)); rico.rotation.y = -0.6; kit.setPose(rico, 'handshake', t); kit.setExpression(rico, 'grin');
+    cam.position.set(s.x + 0.3, s.y + 2.4, s.z + 6.2); cam.lookAt(s.x, s.y + 1.2, s.z); cam.fov = 40; },
+};
+window.renderCity = (name, t = 1) => {
+  for (const c of [rico, banquero, asal, gordo]) c.position.set(0, -50, 0);
+  cam.fov = 40; city.update(t); SHOTS[name](t); cam.updateProjectionMatrix(); r.render(scene, cam); return true;
+};
+window.READY = true;
+</script></body></html>
