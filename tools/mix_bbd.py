@@ -4,7 +4,7 @@ SR = 44100
 def rd(p):
     w = wave.open(p); n = w.getnchannels(); x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768
     return x.reshape(-1, n).mean(1) if n > 1 else x
-root = sys.argv[1]; outp = sys.argv[2]
+root = sys.argv[1]; outp = sys.argv[2]; MUSIC = '--con-musica' in sys.argv   # default: NO music (the user adds it in TikTok)
 vo = rd(os.path.join(root, 'scenes', 'vo_bbd.wav')) if os.path.exists(os.path.join(root, 'scenes', 'vo_bbd.wav')) else None
 v1 = rd(os.path.join(root, 'music', 'bajo_v1_grave_loop.wav')); v2 = rd(os.path.join(root, 'music', 'bajo_v2_menos_grave_loop.wav'))
 hit = rd(os.path.join(root, 'music', 'golpe_v1_grave.wav')); hit2 = rd(os.path.join(root, 'music', 'golpe_v2_menos_grave.wav'))
@@ -29,6 +29,7 @@ t = np.arange(int(SR * 2.2)) / SR; f0 = 38 + 22 * np.minimum(1, t / 1.6); ph = 2
 eng = (np.sin(ph) + 0.5 * np.sin(2 * ph) + 0.25 * np.sin(3 * ph)) * (0.3 + 0.7 * np.minimum(1, t / 1.4)) * np.exp(-np.maximum(0, t - 1.8) * 8)
 rng = np.random.default_rng(1); eng += 0.05 * np.convolve(rng.standard_normal(len(t)), np.ones(30) / 30, 'same'); put(sfx, eng, 4.9, 0.35)
 td = np.arange(int(SR * 0.25)) / SR; put(sfx, np.sin(2 * np.pi * 70 * td) * np.exp(-td * 25), 7.05, 0.6)
+if not MUSIC: mus[:] = 0; sfx[:] = 0; put(sfx, eng, 4.9, 0.35); put(sfx, np.sin(2 * np.pi * 70 * td) * np.exp(-td * 25), 7.05, 0.6)   # keep only engine + door
 mix = mus * 0.6 + sfx * 0.7
 if vo is not None: mix[:len(vo)] += vo[:N] * 1.0
 mix /= np.abs(mix).max() + 1e-9
