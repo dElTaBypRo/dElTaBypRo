@@ -17,6 +17,7 @@ const FPS = 30, DUR = +(process.env.DUR || 46.2); const LANGQ = process.env.LANG
     await p.goto('http://127.0.0.1:8765/scenes/' + (process.env.PAGE || 'scene.html') + LANGQ);
     await p.waitForFunction(() => window.READY === true, null, { timeout: 60000 });
     for (let i = w; i < frames.length; i += nw) {
+      if (process.env.SKIP_EXISTING && fs.existsSync(`${outDir}/${frames[i].f}`)) continue;
       await p.evaluate(t => window.renderAt(t), frames[i].t);
       await p.screenshot({ path: `${outDir}/${frames[i].f}`, type: 'jpeg', quality: 92 });
       if (++done % 100 === 0) console.log(done, 'frames', ((Date.now() - t0) / 1000).toFixed(0) + 's');
