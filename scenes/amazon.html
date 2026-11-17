@@ -337,7 +337,7 @@ window.renderAt = (t) => {
   out.globalAlpha = 1;
   const vg = out.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.4)'); out.fillStyle = vg; out.fillRect(0, 0, W, H);
   const fade = Math.max(1 - sm(0, 0.3, t), sm(END - 0.6, END, t), win(tS.hq - 0.12, tS.hq + 0.12, t, 0.12) * 0.0); if (fade > 0) { out.fillStyle = `rgba(0,0,0,${fade})`; out.fillRect(0, 0, W, H); }
-  drawCaption(t);
+  if (!Q.get('nocap')) drawCaption(t);
   return true;
 };
 window.DBG = { THREE, kit, tono, bezos, lucia, ramiro, brandon, kevin, bezosF, kevinF, phoneT, phoneK, camera, LN, wAt, tS, SHOTS, MU, BU, FU };
