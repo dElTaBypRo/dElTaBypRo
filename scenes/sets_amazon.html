@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas>
+<script type="module">
+// Set preview for the Amazon video: renderAt(i) shows view floor(i).
+// 0 bedroom night lamp on · 1 bedroom lamp off · 2 bedroom morning · 3 HQ exterior · 4 meeting room · 5 factory wide · 6 factory screens
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createProps } from '../kit/propkit.js';
+import { createAmazonSets } from '../kit/amazonsets.js';
+const W = 1080, H = 1920;
+const kit = createKit(THREE, RoundedBoxGeometry); const props = createProps(THREE, kit, 'clay'); const sets = createAmazonSets(THREE, kit, props);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.92;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+await document.fonts.load('900 90px Inter'); await document.fonts.load('800 90px Inter');
+const env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture;
+const mk = (bg, envI = 0.3) => { const s = new THREE.Scene(); s.environment = env; s.environmentIntensity = envI; s.background = new THREE.Color(bg); return s; };
+const S = { bed: mk(0x05070f), hq: mk(0x050816), meet: mk(0x0b0c10), fac: mk(0x15181d) };
+const bedroom = sets.bedroom(); S.bed.add(bedroom);
+const hq = sets.hqExterior(); S.hq.add(hq);
+const meet = sets.meetingRoom(); S.meet.add(meet);
+const fac = sets.factory(); S.fac.add(fac);
+
+// ---- placeholder screen content ----
+function razorIcon(c, x, y, s, body = '#1fa39a') { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = body; c.beginPath(); c.roundRect(-30, -40, 60, 150, 22); c.fill(); c.fillStyle = '#111'; c.beginPath(); c.roundRect(-24, -10, 48, 80, 14); c.fill(); c.beginPath(); c.roundRect(-42, -72, 84, 34, 12); c.fill(); c.fillStyle = '#d8dde3'; for (const [dx, dy] of [[-20, -78], [20, -78], [0, -86]]) { c.beginPath(); c.ellipse(dx, dy, 15, 6, 0, 0, 7); c.fill(); } c.restore(); }
+const listing = (c, w, h) => { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#131921'; c.fillRect(0, 0, w, h * 0.12); c.fillStyle = '#fff'; c.font = `800 ${h * 0.07}px Inter`; c.fillText('amazon', w * 0.04, h * 0.085);
+  c.fillStyle = '#e8f6f5'; c.fillRect(w * 0.04, h * 0.16, w * 0.4, h * 0.78); razorIcon(c, w * 0.24, h * 0.55, h / 420);
+  c.fillStyle = '#111'; c.font = `800 ${h * 0.075}px Inter`; c.fillText('Rasuradora FILO Pro', w * 0.48, h * 0.27); c.fillStyle = '#e8a33a'; c.font = `900 ${h * 0.07}px Inter`; c.fillText('★★★★★ 4.6', w * 0.48, h * 0.39);
+  c.fillStyle = '#111'; c.font = `900 ${h * 0.13}px Inter`; c.fillText('$899', w * 0.48, h * 0.58); c.fillStyle = '#188038'; c.font = `800 ${h * 0.07}px Inter`; c.fillText('10 mil+ vendidos', w * 0.48, h * 0.72); };
+const copy = (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#232f3e'); g.addColorStop(1, '#131921'); c.fillStyle = g; c.fillRect(0, 0, w, h); razorIcon(c, w * 0.24, h * 0.55, h / 380, '#3a4a5e');
+  c.fillStyle = '#fff'; c.font = `800 ${h * 0.11}px Inter`; c.fillText('amazon', w * 0.46, h * 0.3); c.fillStyle = '#ff9900'; c.font = `800 ${h * 0.09}px Inter`; c.fillText('básicos', w * 0.46, h * 0.43);
+  c.fillStyle = '#fff'; c.font = `900 ${h * 0.2}px Inter`; c.fillText('$399', w * 0.46, h * 0.72); c.fillStyle = '#ff6b6b'; c.font = `800 ${h * 0.07}px Inter`; c.fillText('¡OFERTA!', w * 0.46, h * 0.86); };
+const counterDraw = (n) => (c, w, h) => { c.fillStyle = '#0a0d14'; c.fillRect(0, 0, w, h); c.fillStyle = '#9fb3c8'; c.font = `800 ${h * 0.2}px Inter`; c.textAlign = 'left'; c.fillText('PEDIDOS HOY', w * 0.04, h * 0.6);
+  c.fillStyle = '#7CFFB2'; c.font = `900 ${h * 0.62}px Inter`; c.textAlign = 'right'; c.fillText('+' + n.toLocaleString('en-US'), w * 0.96, h * 0.75); c.textAlign = 'left'; };
+const laptopDraw = (c, w, h) => { const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#1fa39a'); g.addColorStop(1, '#0d5f59'); c.fillStyle = g; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = `900 ${h * 0.18}px Inter`; c.fillText('¡10,000', w / 2, h * 0.42); c.fillText('VENTAS!', w / 2, h * 0.64); c.font = `700 ${h * 0.08}px Inter`; c.fillText('FILO Pro', w / 2, h * 0.82);
+  for (let i = 0; i < 40; i++) { c.fillStyle = ['#ffcf3a', '#ff6b6b', '#ffffff', '#7CFFB2'][i % 4]; c.fillRect((i * 97) % w, (i * 53) % (h * 0.3), 8, 14); } c.textAlign = 'left'; };
+const meetDraw = (c, w, h) => { c.fillStyle = '#0f1724'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.font = `900 ${h * 0.08}px Inter`; c.fillText('PRODUCTOS GANADORES', w * 0.05, h * 0.14); c.fillStyle = '#9fb3c8'; c.font = `700 ${h * 0.05}px Inter`; c.fillText('ESTA SEMANA', w * 0.05, h * 0.22);
+  [['Audífonos', '#3f6fb5'], ['Pilas', '#6b6f5a'], ['Cables', '#2f5bb0'], ['???', '#ffcf3a']].forEach(([s, col], i) => { const x = w * 0.05 + i * w * 0.23; c.fillStyle = '#1b2638'; c.fillRect(x, h * 0.3, w * 0.2, h * 0.58); c.fillStyle = col; c.fillRect(x, h * 0.3, w * 0.2, h * 0.04); c.fillStyle = '#fff'; c.font = `800 ${h * 0.06}px Inter`; c.fillText(s, x + w * 0.015, h * 0.82); }); };
+bedroom.userData.laptop.userData.draw(laptopDraw);
+meet.userData.screen.userData.draw(meetDraw);
+fac.userData.screens.forEach((m, i) => m.userData.draw(i % 5 === 2 ? listing : copy));
+fac.userData.counter.userData.draw(counterDraw(7214));
+
+// scale-check characters
+const toño = kit.build(kit.PRESETS.vendedor, 'clay'); S.bed.add(toño);
+const bezos = kit.build(kit.PRESETS.bezos, 'clay'); S.meet.add(bezos);
+const lucia = kit.build(kit.PRESETS.lucia, 'clay'); S.meet.add(lucia);
+const kevin = kit.build(kit.PRESETS.becario, 'clay'); S.meet.add(kevin);
+const bezos2 = kit.build(kit.PRESETS.bezos, 'clay'); S.fac.add(bezos2);
+sets.setEnvIntensity(toño, 0.12); for (const c of [bezos, lucia, kevin]) sets.setEnvIntensity(c, 0.3); sets.setEnvIntensity(bezos2, 0.5);
+const cam = new THREE.PerspectiveCamera(40, W / H, 0.05, 600);
+const look = (p, t, fov) => { cam.position.set(...p); cam.lookAt(...t); cam.fov = fov; cam.updateProjectionMatrix(); };
+window.renderAt = (t) => {
+  const i = Math.floor(t + 1e-6); const T = 2 + (t - i); let scene;
+  if (i <= 2) { scene = S.bed; const ud = bedroom.userData; ud.setTime(i === 2 ? 1 : 0); ud.setLamp(i === 0 ? 1 : 0);
+    if (i === 2) { toño.rotation.set(0, ud.standSpot.ry, 0); toño.position.set(ud.standSpot.x, 0, ud.standSpot.z); kit.setPose(toño, 'stretch', T); kit.setExpression(toño, 'happy'); ud.setQuilt(0); }
+    else { const a = ud.bedAnchor; toño.position.set(a.x, a.y, a.z); toño.rotation.set(-Math.PI / 2, 0, 0); kit.setPose(toño, 'sleep', T); kit.setExpression(toño, 'happy'); for (const g of toño.userData.rig.eyes) g.userData.inner.scale.y = 0.08; ud.setQuilt(1); }
+    look([-0.55, 1.85, 2.5], [0.85, 0.95, -1.6], 54); }
+  if (i === 3) { scene = S.hq; look([20, 8, 62], [0, 19, 0], 44); }
+  if (i === 4) { scene = S.meet; const ud = meet.userData;
+    bezos.position.set(ud.bossSpot.x, 0, ud.bossSpot.z); kit.setPose(bezos, 'lean', T); kit.setExpression(bezos, 'grin');
+    const s0 = ud.seats[0], s3 = ud.seats[1]; for (const [c, s] of [[lucia, s0], [kevin, s3]]) { c.position.set(s.x, kit.sitY(c, 0.45), s.z); c.rotation.y = s.ry; kit.setPose(c, 'sit', T); kit.setExpression(c, 'neutral'); }
+    look([0.35, 1.75, 3.6], [0, 1.45, -2.2], 50); }
+  if (i === 5) { scene = S.fac; fac.userData.update(T); bezos2.position.set(1.2, 0, 3.4); bezos2.rotation.y = -0.3; kit.setPose(bezos2, 'laugh', T); kit.setExpression(bezos2, 'grin'); look([7, 5.2, 13], [0, 3.2, -5], 52); }
+  if (i === 6) { scene = S.fac; fac.userData.update(T); bezos2.position.set(1.2, 0, 3.4); look([0, 5.8, 6.5], [0, 6.0, -12], 46); }
+  if (i === 7) { scene = S.bed; const ud = bedroom.userData; ud.setTime(0); ud.setLamp(1); ud.setQuilt(0); toño.position.set(0.2, 0, 0.9); toño.rotation.set(0, 0.6, 0); kit.setPose(toño, 'celebrate', T); kit.setExpression(toño, 'grin'); look([1.7, 1.55, 2.3], [-2.0, 1.15, -0.2], 56); }
+  r.render(scene, cam); return true;
+};
+window.READY = true;
+</script></body></html>
