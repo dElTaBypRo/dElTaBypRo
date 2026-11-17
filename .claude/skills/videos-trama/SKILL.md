@@ -9,6 +9,7 @@ description: Cómo hacer los videos verticales (Reels/TikTok) de este repo con p
 - **Sin narrador.** La historia la cuentan los personajes con sus diálogos y con lo que hacen.
 - Los personajes **a veces rompen la cuarta pared** (voltean a la cámara y explican lo que está pasando) y a veces solo viven su escena.
 - Trama con perspectivas: protagonista común vs. poderosos, con un remate claro al final.
+- **Métrica obligatoria: cadena de dudas.** El video arranca con una duda en los primeros 2–3 s (una pregunta que el espectador necesita que le respondan). Cada respuesta abre la siguiente duda, y así hasta el final; ninguna escena queda "cerrada" sin dejar otra pregunta abierta. El remate final responde la primera duda con un giro. Al proponer guiones, escribirlos como lista de eslabones: ❓ duda → 💬 respuesta (que abre la siguiente ❓).
 - Duración objetivo: 60–90 s. Corte cada ~2.5 s, plano/contraplano en diálogos, acercamiento en los remates.
 
 ## Reglas visuales (obligatorias)
