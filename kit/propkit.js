@@ -214,5 +214,55 @@ export function createProps(THREE, kit, finish = 'clay') {
   // ---------------- clouds ----------------
   function cloud(s = 1) { const g = new THREE.Group(); const m = M('#ffffff'); for (let i = 0; i < 7; i++) add(g, new THREE.SphereGeometry((0.5 + rnd() * 0.5) * s, 16, 12), m, (rnd() - 0.5) * 2.2 * s, rnd() * 0.4 * s, (rnd() - 0.5) * 1.0 * s); return g; }
 
-  return { airplane, starshipShip, starshipBooster, starshipStack, tower, ufo, router, podium, phone, radar, airport, cloud, canvasTex };
+  // ---------------- hand props (real scale: the characters are ~1.8 units tall) ----------------
+  const METAL = () => new THREE.MeshPhysicalMaterial({ color: 0xd8dde3, metalness: 0.9, roughness: 0.25 });
+  // electric rotary shaver standing upright (y up), ~0.17 long; o.body / o.grip colours
+  function razor(o = {}) {
+    const g = new THREE.Group(); const body = M(o.body || '#1fa39a', 'leather'), grip = M(o.grip || '#1a1a1a', 'leather'), metal = METAL();
+    add(g, rb(0.056, 0.13, 0.04, 0.018), body, 0, 0.065, 0);
+    add(g, rb(0.044, 0.075, 0.044, 0.014), grip, 0, 0.055, 0);
+    add(g, new THREE.CylinderGeometry(0.008, 0.008, 0.006, 12), M(o.accent || '#ffffff', 'white'), 0, 0.105, 0.021).rotation.x = Math.PI / 2;
+    add(g, rb(0.078, 0.028, 0.052, 0.012), grip, 0, 0.142, 0);
+    for (const [x, z] of [[-0.021, -0.01], [0.021, -0.01], [0, 0.013]]) { add(g, new THREE.CylinderGeometry(0.0145, 0.0145, 0.01, 20), metal, x, 0.159, z); add(g, new THREE.TorusGeometry(0.009, 0.0016, 6, 16), M('#333', 'dark'), x, 0.1645, z).rotation.x = Math.PI / 2; }
+    return g;
+  }
+  // product box with a printed face (draw(ctx, w, h))
+  function box(w, h, d, color, draw) { const g = new THREE.Group(); const m = M(color || '#c9a26b', 'cloth'); const b = add(g, rb(w, h, d, Math.min(w, h, d) * 0.08), m, 0, h / 2, 0);
+    if (draw) { const tex = canvasTex(256, Math.round(256 * h / w), draw); add(g, new THREE.PlaneGeometry(w * 0.92, h * 0.92), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }), 0, h / 2, d / 2 + 0.001); }
+    return g; }
+  // Mexican torta (bolillo sandwich), long axis along x, ~0.17 long
+  function torta() {
+    const g = new THREE.Group(); const bread = M('#d79a52', 'cloth');
+    const top = add(g, new THREE.CapsuleGeometry(0.038, 0.1, 8, 16), bread, 0, 0.022, 0); top.rotation.z = Math.PI / 2; top.scale.set(1, 1, 0.95);
+    const bot = add(g, new THREE.CapsuleGeometry(0.034, 0.1, 8, 16), bread, 0, -0.03, 0); bot.rotation.z = Math.PI / 2; bot.scale.set(1, 0.7, 0.95);
+    const lay = (c, y, sx, sz) => { const l = add(g, rb(0.15 * sx, 0.012, 0.075 * sz, 0.005), M(c, 'cloth'), 0, y, 0); return l; };
+    lay('#5fae3a', -0.006, 1.02, 1.12); lay('#e8a0a8', 0.002, 0.95, 1.0); lay('#d6342c', -0.014, 0.9, 1.05); lay('#9bc45a', 0.009, 0.85, 0.95);
+    return g;
+  }
+  function mug(color = '#f2f2f2', text) { const g = new THREE.Group(); const m = M(color, 'white');
+    add(g, new THREE.CylinderGeometry(0.04, 0.036, 0.1, 24), m, 0, 0.05, 0); add(g, new THREE.CylinderGeometry(0.035, 0.035, 0.002, 20), M('#3b2412', 'dark'), 0, 0.09, 0);
+    const h = add(g, new THREE.TorusGeometry(0.025, 0.007, 8, 16), m, 0.045, 0.05, 0); h.rotation.z = Math.PI / 2;
+    if (text) { const tex = canvasTex(256, 128, (c, w, hh) => { c.fillStyle = color; c.fillRect(0, 0, w, hh); c.fillStyle = '#111'; c.font = '900 44px Inter, sans-serif'; c.textAlign = 'center'; c.fillText(text, w / 2, 80); });
+      const lb = add(g, new THREE.CylinderGeometry(0.0405, 0.0365, 0.06, 24, 1, true, -0.9, 1.8), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }), 0, 0.05, 0); lb.castShadow = false; }
+    return g; }
+  // phone with a live screen: g.userData.draw(fn(ctx,w,h)) redraws it. Screen faces +z, long axis y. ~0.08 x 0.16
+  function screenPhone(o = {}) {
+    const g = new THREE.Group(); const W = o.w || 0.08, H = o.h || 0.162;
+    add(g, rb(W, H, 0.011, 0.01), M(o.color || '#1c1e22', 'leather'));
+    const c = document.createElement('canvas'); c.width = 540; c.height = Math.round(540 * H / W); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const scr = add(g, new THREE.PlaneGeometry(W * 0.9, H * 0.93), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), 0, 0, 0.0058); scr.castShadow = false;
+    const glow = new THREE.PointLight(0x9fc8ff, 0, 0.6); glow.position.set(0, 0, 0.08); g.add(glow);
+    g.userData = { canvas: c, ctx: c.getContext('2d'), tex, screen: scr, glow, draw(fn) { fn(this.ctx, c.width, c.height); tex.needsUpdate = true; } };
+    return g;
+  }
+  // wall / desk monitor with a live screen (same draw() API). Screen faces +z.
+  function monitor(w = 1.6, h = 0.9, o = {}) {
+    const g = new THREE.Group(); add(g, rb(w + 0.06, h + 0.06, 0.05, 0.02), M(o.frame || '#111214', 'dark'));
+    const c = document.createElement('canvas'); c.width = o.res || 1024; c.height = Math.round(c.width * h / w); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const scr = add(g, new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), 0, 0, 0.027); scr.castShadow = false; scr.receiveShadow = false;
+    g.userData = { canvas: c, ctx: c.getContext('2d'), tex, screen: scr, draw(fn) { fn(this.ctx, c.width, c.height); tex.needsUpdate = true; } };
+    return g;
+  }
+
+  return { razor, box, torta, mug, screenPhone, monitor, airplane, starshipShip, starshipBooster, starshipStack, tower, ufo, router, podium, phone, radar, airport, cloud, canvasTex };
 }

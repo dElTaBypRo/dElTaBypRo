@@ -111,6 +111,69 @@ export function createKit(THREE, RoundedBoxGeometry) {
       outfit: { type: 'suit', top: '#efe6d2', inner: '#ffffff', tie: '#b3202a', pants: '#efe6d2', shoes: '#6b4a2e' },
       acc: { hat: 'tophat', hatColor: '#16161a', chain: true, cigar: true, watch: true },
       expression: 'grin' }),
+    // --- Amazon video cast ---
+    bezos: P({ name: 'Jeff Bezos (caricatura)', skin: '#e3a684',
+      head: { w: 0.66, h: 0.68, d: 0.6, round: 0.22, jowl: 0.05, shine: true },
+      ears: { size: 0.095 },
+      eyes: { size: 0.07, open: 1.0, spacing: 0.14, iris: '#5a3a22' },
+      brows: { color: '#3a2a1e', thick: 0.04, y: 0.16 },
+      nose: { size: 0.052, width: 1.05 },
+      hair: { style: 'bald', color: '#4a3526' },
+      mouth: { width: 1.15, lips: '#a5533d' },
+      body: { shoulders: 0.68, chest: 0.38, belly: 0.05, height: 1.0, arms: 0.1, legs: 0.1 },
+      outfit: { type: 'puffer', top: '#1b1b1f', vest: '#2f3d55', pants: '#3a4a6a', shoes: '#151515' },
+      acc: { watch: true },
+      expression: 'grin' }),
+    vendedor: P({ name: 'Toño (vendedor)', skin: '#c68a5e',
+      head: { w: 0.6, h: 0.66, d: 0.57, round: 0.13 },
+      eyes: { size: 0.066, open: 0.95, iris: '#2a1d14' },
+      brows: { color: '#1a1210', thick: 0.034 },
+      hair: { style: 'messy', color: '#1a1210' },
+      body: { shoulders: 0.54, chest: 0.3, belly: 0.08, height: 0.98 },
+      outfit: { type: 'hoodie', top: '#e0582a', inner: '#f5f5f5', pants: '#3a4a6a', shoes: '#f2f2f2' },
+      expression: 'happy' }),
+    lucia: P({ name: 'Lucía (la lista)', skin: '#e6b48f',
+      head: { w: 0.58, h: 0.64, d: 0.56, round: 0.14 },
+      eyes: { size: 0.064, open: 0.9, iris: '#3b2a1e', lashes: true },
+      brows: { color: '#2a1d14', thick: 0.024 },
+      nose: { size: 0.044 },
+      hair: { style: 'bob', color: '#2a1d14' },
+      glasses: { style: 'square', color: '#9a2a3a' },
+      mouth: { width: 0.9, lips: '#b8404c' },
+      body: { shoulders: 0.48, chest: 0.27, belly: 0.0, height: 0.95, arms: 0.065, legs: 0.085 },
+      outfit: { type: 'shirt', top: '#3f6fb5', inner: '#3f6fb5', pants: '#2b2f3a', shoes: '#1a1a1a' },
+      acc: { badge: true },
+      expression: 'neutral' }),
+    ramiro: P({ name: 'Ramiro (el amargado)', skin: '#d9a57c',
+      head: { w: 0.62, h: 0.68, d: 0.58, round: 0.12, jowl: 0.35 },
+      eyes: { size: 0.058, open: 0.5, iris: '#3b2a1e', bags: true },
+      brows: { color: '#6a6a6a', thick: 0.036 },
+      nose: { size: 0.058, width: 1.1 },
+      hair: { style: 'receding', color: '#7a7a7a' },
+      beard: { style: 'mustache', color: '#6a6a6a' },
+      body: { shoulders: 0.58, chest: 0.34, belly: 0.3, height: 0.97 },
+      outfit: { type: 'sweater', top: '#6b6f5a', pants: '#4a4a4a', shoes: '#3b2a1e' },
+      acc: { badge: true },
+      expression: 'sad' }),
+    brandon: P({ name: 'Brandon (el lambiscón)', skin: '#f0c9a6',
+      head: { w: 0.6, h: 0.7, d: 0.57, round: 0.12 },
+      eyes: { size: 0.068, open: 1.1, iris: '#4a6a8a' },
+      brows: { color: '#8a5a20', thick: 0.026 },
+      hair: { style: 'side', color: '#b0802a' },
+      mouth: { width: 1.2, lips: '#b0605a' },
+      body: { shoulders: 0.54, chest: 0.3, belly: 0.05, height: 1.02 },
+      outfit: { type: 'suit', top: '#2f5bb0', inner: '#ffffff', tie: '#ffcf3a', pants: '#2f5bb0', shoes: '#4a3424' },
+      acc: { badge: true },
+      expression: 'grin' }),
+    becario: P({ name: 'Kevin (el becario)', skin: '#e0a882',
+      head: { w: 0.58, h: 0.64, d: 0.56, round: 0.14 },
+      eyes: { size: 0.06, open: 0.6, iris: '#3b2a1e' },
+      brows: { color: '#3a2a1e', thick: 0.026 },
+      hair: { style: 'messy', color: '#3a2a1e' },
+      body: { shoulders: 0.48, chest: 0.27, belly: 0.1, height: 0.94, arms: 0.068, legs: 0.085 },
+      outfit: { type: 'tee', top: '#ffcf3a', pants: '#3a4a6a', shoes: '#d65c5c' },
+      acc: { badge: true, cap: true, hatColor: '#d65c5c' },
+      expression: 'neutral' }),
   };
 
   const EXPRESSIONS = {
@@ -125,7 +188,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
     evil:      { open: 0.42, brow: [-0.05, -0.62], mouth: 'evil', pupil: 0.8, pupilX: 0.3 },
     sad:       { open: 0.8, brow: [0.02, 0.45], mouth: 'frown', pupil: 1 },
   };
-  const POSES = ['evilRub', 'idle', 'point', 'shrug', 'handsUp', 'facepalm', 'think', 'crossed', 'wave', 'walk', 'presenting', 'podium', 'rubHands', 'handsBehind', 'handshake', 'phone', 'countMoney', 'thumbsUp', 'lookDown'];
+  const POSES = ['evilRub', 'sit', 'lookPhone', 'celebrate', 'eat', 'laugh', 'stretch', 'lean', 'showPhone', 'sleep', 'headHands', 'idle', 'point', 'shrug', 'handsUp', 'facepalm', 'think', 'crossed', 'wave', 'walk', 'presenting', 'podium', 'rubHands', 'handsBehind', 'handshake', 'phone', 'countMoney', 'thumbsUp', 'lookDown'];
   const GESTURES = ['open', 'fist', 'point', 'thumbsUp', 'money', 'peace', 'grab', 'relaxed'];
 
   // ---------------- materials (finishes) ----------------
@@ -182,7 +245,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
     const pelvisW = Math.max(0.34, b.shoulders * 0.7) + b.belly * 0.12;
     add(hips, rbox(pelvisW, 0.2, b.chest * 0.85 + b.belly * 0.1, 0.07), pantsM, 0, -0.02, 0);
     // belt
-    if (p.outfit.type === 'suit' || p.outfit.type === 'tee' || p.outfit.type === 'leather') add(hips, rbox(pelvisW + 0.01, 0.04, b.chest * 0.85 + b.belly * 0.1 + 0.01, 0.015), F('#1a1a1a', 'leather'), 0, 0.07, 0);
+    if (['suit', 'tee', 'leather', 'puffer'].includes(p.outfit.type)) add(hips, rbox(pelvisW + 0.01, 0.04, b.chest * 0.85 + b.belly * 0.1 + 0.01, 0.015), F('#1a1a1a', 'leather'), 0, 0.07, 0);
 
     // spine / torso
     const spine = new THREE.Group(); spine.position.y = 0.06; hips.add(spine); R.spine = spine;
@@ -228,6 +291,20 @@ export function createKit(THREE, RoundedBoxGeometry) {
       for (let i = 0; i < 4; i++) add(spine, new THREE.SphereGeometry(0.01, 8, 6), F('#f4f4f4', 'white'), 0, torsoH * (0.82 - i * 0.2), frontZ(torsoH * (0.82 - i * 0.2)) + 0.004);
       add(spine, rbox(0.012, torsoH * 0.95, 0.008, 0.003), F(p.outfit.top, 'cloth'), 0.0, torsoH * 0.5, frontZ(torsoH * 0.5) + 0.003);
       if (p.outfit.tieOn) { const tm = F(p.outfit.tie, 'cloth'); const tie = add(spine, rbox(0.06, torsoH * 0.55, 0.012, 0.01), tm, 0.02, torsoH * 0.68, frontZ(torsoH * 0.68) + 0.01); tie.rotation.z = 0.12; }
+    } else if (ot === 'puffer') { // quilted vest over a tee
+      const vm = F(p.outfit.vest || '#2f3d55', 'cloth'), seam = F(new THREE.Color(p.outfit.vest || '#2f3d55').multiplyScalar(0.55).getStyle(), 'cloth');
+      const vw = chestW + 0.05, vd = chestD + 0.06;
+      for (let i = 0; i < 5; i++) add(spine, rbox(vw - Math.abs(i - 2) * 0.004, torsoH * 0.19, vd, 0.045), vm, 0, torsoH * (0.1 + i * 0.19), 0);
+      for (let i = 1; i < 5; i++) add(spine, rbox(vw - 0.004, 0.012, vd - 0.004, 0.005), seam, 0, torsoH * (0.005 + i * 0.19), 0);
+      add(spine, rbox(0.012, torsoH * 0.95, 0.01, 0.004), F('#9a9a9a', 'dark'), 0, torsoH * 0.5, vd / 2 + 0.002);
+      const coll = add(spine, new THREE.CylinderGeometry(0.13, 0.14, 0.09, 20, 1, true), vm, 0, torsoH + 0.02, 0); coll.material.side = THREE.DoubleSide;
+      const tc = add(spine, new THREE.TorusGeometry(0.095, 0.014, 10, 24), topM, 0, torsoH - 0.005, 0); tc.rotation.x = Math.PI / 2;
+    } else if (ot === 'hoodie') {
+      add(spine, rbox(chestW + 0.014, 0.06, chestD + 0.014, 0.025), topM, 0, 0.03, 0);
+      add(spine, rbox(chestW * 0.62, torsoH * 0.26, 0.03, 0.02), topM, 0, torsoH * 0.22, frontZ(torsoH * 0.22) + 0.006);
+      add(spine, rbox(chestW * 0.5, 0.012, 0.012, 0.005), F(new THREE.Color(p.outfit.top).multiplyScalar(0.6).getStyle(), 'cloth'), 0, torsoH * 0.35, frontZ(torsoH * 0.35) + 0.02);
+      const hood = add(spine, rbox(chestW * 0.62, 0.13, 0.12, 0.05), topM, 0, torsoH + 0.005, -chestD / 2 + 0.03); hood.rotation.x = -0.35; for (const s2 of [-1, 1]) { const hs = add(spine, rbox(0.06, 0.1, chestD * 0.55, 0.025), topM, s2 * 0.13, torsoH + 0.0, -0.02); hs.rotation.z = s2 * 0.25; }
+      for (const s2 of [-1, 1]) { add(spine, new THREE.CylinderGeometry(0.007, 0.007, torsoH * 0.32, 6), F(p.outfit.inner, 'white'), s2 * 0.05, torsoH * 0.8, frontZ(torsoH * 0.8) + 0.012); add(spine, new THREE.SphereGeometry(0.013, 8, 6), F(p.outfit.inner, 'white'), s2 * 0.05, torsoH * 0.63, frontZ(torsoH * 0.63) + 0.014); }
     } else { // tee
       const coll = add(spine, new THREE.TorusGeometry(0.095, 0.014, 10, 24), topM, 0, torsoH - 0.005, 0); coll.rotation.x = Math.PI / 2;
     }
@@ -240,6 +317,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
     add(head, rbox(hd.w, hd.h, hd.d, hd.round * Math.min(hd.w, hd.h)), skin);
     if (hd.jowl > 0.01) { const j = add(head, rbox(hd.w * (1 + 0.035 * hd.jowl), hd.h * 0.46, hd.d * (1 + 0.025 * hd.jowl), hd.round * Math.min(hd.w, hd.h) * 1.1), skin, 0, -hd.h * (0.27 + 0.02 * hd.jowl), 0.004); }
     const fz = hd.d / 2 + (hd.jowl > 0.01 ? 0.02 * hd.jowl : 0) * 0;
+    if (hd.shine) { const sh = add(head, new THREE.SphereGeometry(hd.w * 0.16, 16, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, depthWrite: false }), -hd.w * 0.14, hd.h / 2 + 0.002, hd.d * 0.1); sh.scale.set(1.3, 0.08, 0.8); sh.castShadow = false; }
     // ears
     for (const s of [-1, 1]) { const e = add(head, new THREE.SphereGeometry(p.ears.size, 16, 12), skin, s * hd.w / 2, -0.01, -0.02); e.scale.set(0.45, 1, 0.75); }
     // eyes
@@ -253,6 +331,8 @@ export function createKit(THREE, RoundedBoxGeometry) {
       const pupil = add(inner, new THREE.SphereGeometry(E.size * 0.32, 16, 12), pupilM, 0, 0, E.size * 0.48); pupil.scale.set(1, 1, 0.3);
       add(inner, new THREE.SphereGeometry(E.size * 0.12, 8, 6), hiM, E.size * 0.18, E.size * 0.2, E.size * 0.56);
       const lid = add(g, rbox(E.size * 2.6, E.size * 0.35, E.size * 0.5, E.size * 0.12), skin, 0, E.size * 0.9, E.size * 0.12);
+      if (E.lashes) for (let k = 0; k < 2; k++) { const la = add(g, rbox(E.size * 0.55, E.size * 0.16, E.size * 0.2, E.size * 0.05), F('#151515', 'dark'), s * E.size * (0.95 + k * 0.25), E.size * (0.75 - k * 0.3), E.size * 0.2); la.rotation.z = s * (0.5 + k * 0.35); }
+      if (E.bags) { const bg = add(head, new THREE.SphereGeometry(E.size, 16, 10), F(new THREE.Color(p.skin).multiplyScalar(0.8).getStyle(), 'skin'), s * E.spacing, E.y - E.size * 0.95, fz - 0.004); bg.scale.set(1.15, 0.38, 0.25); }
       g.userData = { inner, pupil, iris, lid, side: s }; eyesG.push(g);
     }
     // brows
@@ -274,6 +354,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
     mk('evil', g => { g.rotation.z = 0.06; const d = add(g, new THREE.CircleGeometry(mw * 1.35, 32, Math.PI, Math.PI), mouthInM); d.scale.y = 0.42; add(g, rbox(mw * 2.4, mw * 0.24, 0.01, 0.004), teethM, 0, -mw * 0.11, 0.004);
       add(g, rbox(mw * 2.75, 0.016, 0.012, 0.006), lipsM, 0, 0, 0.002); for (const s of [-1, 1]) { const c = add(g, new THREE.TorusGeometry(mw * 0.28, 0.013, 6, 12, Math.PI * 0.6), lipsM); c.position.set(s * mw * 1.38, mw * 0.2, 0.002); c.rotation.z = s > 0 ? -0.2 : Math.PI + 0.2 - Math.PI * 0.6; } });
     mk('smirk', g => { const t = add(g, new THREE.TorusGeometry(mw * 0.9, 0.015, 8, 24, Math.PI * 0.5), lipsM); t.rotation.z = Math.PI * 1.5; t.position.set(-mw * 0.1, mw * 0.55, 0); add(g, rbox(mw * 0.9, 0.016, 0.02, 0.007), lipsM, -mw * 0.5, -mw * 0.33, 0); });
+    mk('talk', g => { const d = add(g, new THREE.CircleGeometry(mw * 0.8, 28), mouthInM); d.scale.y = 0.7; add(g, rbox(mw * 1.05, mw * 0.2, 0.01, 0.004), teethM, 0, mw * 0.42, 0.004); const tg = add(g, new THREE.CircleGeometry(mw * 0.45, 20), F('#c0505a', 'dark'), 0, -mw * 0.3, 0.003); tg.scale.y = 0.5; const l = add(g, new THREE.TorusGeometry(mw * 0.8, 0.014, 8, 28), lipsM); l.scale.y = 0.7; });
     mk('wavy', g => { for (let i = 0; i < 3; i++) { const t = add(g, new THREE.TorusGeometry(mw * 0.3, 0.009, 6, 12, Math.PI), lipsM); t.position.x = (i - 1) * mw * 0.6; t.rotation.z = i % 2 ? Math.PI : 0; } });
 
     // hair (fitted to the head box)
@@ -293,16 +374,17 @@ export function createKit(THREE, RoundedBoxGeometry) {
 
     // arms
     const armR = b.arms, ua = 0.3 * k, fa = 0.28 * k;
-    const sleeveFore = ot === 'tee' ? skin : topM;
+    const teeLike = ot === 'tee' || ot === 'puffer'; const sleeveFore = teeLike ? skin : topM;
     for (const s of [-1, 1]) {
       const sh = new THREE.Group(); sh.position.set(s * (chestW / 2 + armR * 0.55), torsoH - armR * 1.1, 0); spine.add(sh);
       add(sh, new THREE.SphereGeometry(armR * 1.18, 20, 14), topM);
       add(sh, new THREE.CapsuleGeometry(armR, ua - armR, 8, 16), topM, 0, -ua / 2, 0);
-      if (ot === 'tee') add(sh, new THREE.CylinderGeometry(armR * 1.12, armR * 1.12, ua * 0.35, 16), topM, 0, -ua * 0.25, 0);
+      if (teeLike) add(sh, new THREE.CylinderGeometry(armR * 1.12, armR * 1.12, ua * 0.35, 16), topM, 0, -ua * 0.25, 0);
       const el = new THREE.Group(); el.position.y = -ua; sh.add(el);
-      add(el, new THREE.SphereGeometry(armR * 0.98, 16, 12), ot === 'tee' ? skin : topM);
+      add(el, new THREE.SphereGeometry(armR * 0.98, 16, 12), teeLike ? skin : topM);
       add(el, new THREE.CapsuleGeometry(armR * 0.9, fa - armR, 8, 16), sleeveFore, 0, -fa / 2, 0);
       if (ot === 'suit') add(el, new THREE.CylinderGeometry(armR * 0.95, armR * 0.95, 0.03, 16), innerM, 0, -fa + 0.02, 0);
+      if (ot === 'hoodie' || ot === 'sweater') add(el, new THREE.CylinderGeometry(armR * 1.0, armR * 1.0, 0.045, 16), topM, 0, -fa + 0.03, 0);
       const wr = new THREE.Group(); wr.position.y = -fa; el.add(wr);
       buildHand(wr, skin, armR, s);
       if (s < 0 && (p.acc || {}).watch) add(wr, new THREE.CylinderGeometry(armR * 0.98, armR * 0.98, 0.035, 16), F('#d9b14a', 'leather'), 0, 0.03, 0);
@@ -378,6 +460,16 @@ export function createKit(THREE, RoundedBoxGeometry) {
     } else if (st === 'horseshoe') {
       for (const s of [-1, 1]) add(H, rbox(w * 0.07, h * 0.3, d * 0.75, 0.025), hairM, s * (w / 2 + 0.01), h * 0.08, -d * 0.1);
       add(H, rbox(w * 1.06, h * 0.32, d * 0.12, 0.04), hairM, 0, h * 0.06, -d / 2 - 0.01);
+    } else if (st === 'bob') {
+      cap(w * 1.08, h * 0.26, d * 1.08, h / 2 - h * 0.05);
+      for (const s of [-1, 1]) add(H, rbox(w * 0.12, h * 0.74, d * 0.92, 0.045), hairM, s * (w / 2 + 0.028), h * 0.03, -d * 0.06);
+      add(H, rbox(w * 1.1, h * 0.76, d * 0.14, 0.05), hairM, 0, h * 0.03, -d / 2 - 0.02);
+      const fr = add(H, rbox(w * 1.0, h * 0.13, d * 0.16, 0.045), hairM, -w * 0.04, h * 0.37, d / 2 - d * 0.04); fr.rotation.z = 0.1;
+    } else if (st === 'ponytail') {
+      cap(w * 1.06, h * 0.24, d * 1.06, h / 2 - h * 0.06);
+      for (const s of [-1, 1]) add(H, rbox(w * 0.06, h * 0.42, d * 0.8, 0.02), hairM, s * (w / 2 + 0.005), h * 0.17, -d * 0.08);
+      add(H, rbox(w * 1.02, h * 0.5, d * 0.1, 0.03), hairM, 0, h * 0.13, -d / 2 - 0.005);
+      const tail = add(H, new THREE.CapsuleGeometry(w * 0.09, h * 0.45, 6, 12), hairM, 0, h * 0.05, -d / 2 - 0.08); tail.rotation.x = 0.35;
     } else if (st === 'side') {
       cap(w * 1.05, h * 0.23, d * 1.05, h / 2 - h * 0.065);
       const lift = add(H, rbox(w * 0.6, h * 0.1, d * 0.3, 0.04), hairM, w * 0.15, h / 2 + 0.005, d / 2 - d * 0.18); lift.rotation.x = -0.2;
@@ -441,6 +533,16 @@ export function createKit(THREE, RoundedBoxGeometry) {
       case 'countMoney': P.shoulderL = [-0.55, 0, 0.3]; P.shoulderR = [-0.55, 0, -0.3]; P.elbowL = [-1.1, 0.5, 0]; P.elbowR = [-1.1, -0.5, 0]; P.head[0] = 0.25; break;
       case 'thumbsUp': P.shoulderR = [-1.0, 0, 0.35]; P.elbowR = [-1.2, 0, 0]; P.wristR = [0, -0.6, 0]; P.head[2] = 0.06; break;
       case 'lookDown': P.shoulderL = [0.45, 0, 0.12]; P.shoulderR = [0.45, 0, -0.12]; P.elbowL = [-0.55, -0.6, 0]; P.elbowR = [-0.55, 0.6, 0]; P.neck[0] = 0.25; P.head[0] = 0.35; break;
+      case 'sit': P.shoulderL = [-0.35, 0, -0.08]; P.shoulderR = [-0.35, 0, 0.08]; P.elbowL = [-0.9, 0, 0]; P.elbowR = [-0.9, 0, 0]; break;
+      case 'lookPhone': P.shoulderR = [-0.75, 0, -0.32]; P.elbowR = [-1.75, 0.25, 0]; P.wristR = [0.25, 0.15, 0]; P.shoulderL = [-0.35, 0, 0.28]; P.elbowL = [-1.25, 0.6, 0]; P.neck = [0.22, 0, 0]; P.head = [0.25, 0, 0]; break;
+      case 'showPhone': P.shoulderL = [-1.35, 0, 0.12]; P.elbowL = [-0.35, 0, 0]; P.wristL = [-0.2, 0, 0]; P.head = [0.0, 0.0, 0.05]; break;
+      case 'celebrate': { const pump = Math.abs(Math.sin(t * 7)); P.shoulderL = [-0.2, 0, -2.4 - pump * 0.25]; P.elbowL = [0, 0, -0.9 + pump * 0.4]; P.shoulderR = [-2.7, 0, 0.25]; P.elbowR = [-0.3, 0, 0]; P.wristR = [0.2, Math.PI, 0]; P.spine = [-0.08, Math.sin(t * 7) * 0.05, 0]; P.head = [-0.15, 0, Math.sin(t * 7) * 0.06]; break; }
+      case 'eat': { const ch = Math.sin(t * 9) * 0.06; P.shoulderR = [-0.85, 0, -0.42]; P.elbowR = [-2.0 + ch, 0.1, 0]; P.wristR = [0.1, 0, 0]; P.head = [0.04, 0, Math.sin(t * 4.5) * 0.03]; break; }
+      case 'laugh': { const sh = Math.sin(t * 15) * 0.04; P.spine = [-0.18 + sh, 0, 0]; P.neck = [-0.15, 0, 0]; P.head = [-0.3 + sh, 0, 0.05]; P.shoulderL = [-0.45, 0, 0.35]; P.shoulderR = [-0.45, 0, -0.35]; P.elbowL = [-1.5, 0.6, 0]; P.elbowR = [-1.5, -0.6, 0]; break; }
+      case 'stretch': P.shoulderL = [0, 0, -2.85]; P.shoulderR = [0, 0, 2.85]; P.elbowL = [0, 0, -0.25]; P.elbowR = [0, 0, 0.25]; P.spine = [-0.1, 0, 0]; P.head = [-0.2, 0, 0]; break;
+      case 'lean': P.spine = [0.32, 0, 0]; P.neck = [-0.12, 0, 0]; P.head = [-0.12, 0, 0]; P.shoulderL = [-1.15, 0, -0.02]; P.shoulderR = [-1.15, 0, 0.02]; P.elbowL = [-0.05, 0, 0]; P.elbowR = [-0.05, 0, 0]; P.wristL = [0.4, 0, 0]; P.wristR = [0.4, 0, 0]; break; // fists on a table top ~0.78 high, ~0.63 ahead
+      case 'sleep': P.shoulderL = [0, 0, -0.08]; P.shoulderR = [0, 0, 0.08]; P.elbowL = [-0.1, 0, 0]; P.elbowR = [-0.1, 0, 0]; P.spine[0] = 0; P.head = [0, 0, 0.15]; break;
+      case 'headHands': P.shoulderL = [-1.0, 0, -1.25]; P.shoulderR = [-1.0, 0, 1.25]; P.elbowL = [-2.3, 0, 0]; P.elbowR = [-2.3, 0, 0]; P.head = [0.05, 0, 0]; break;
       case 'walk': { const w = Math.sin(t * 6); P.hipL[0] = w * 0.5; P.hipR[0] = -w * 0.5; P.kneeL[0] = Math.max(0, -w) * 0.8; P.kneeR[0] = Math.max(0, w) * 0.8; P.shoulderL[0] = -w * 0.45; P.shoulderR[0] = w * 0.45; P.elbowL[0] = -0.35; P.elbowR[0] = -0.35; P.spine[1] = w * 0.06; break; }
     }
     return P;
@@ -453,15 +555,16 @@ export function createKit(THREE, RoundedBoxGeometry) {
     thumbsUp: { f: [1.7, 1.7, 1.7, 1.7], th: [0, -2.4] }, peace: { f: [0, 0, 1.7, 1.7], th: [0.9, 0.2] },
     grab: { f: [0.9, 0.95, 1.0, 1.0], th: [0.6, 0.4] }, money: { f: [0.9, 1.0, 1.1, 1.2], th: [0.6, 0.3], rub: true },
   };
-  const POSE_HANDS = { evilRub: ['relaxed', 'relaxed'], point: ['relaxed', 'point'], thumbsUp: ['relaxed', 'thumbsUp'], countMoney: ['money', 'money'], rubHands: ['open', 'open'], crossed: ['fist', 'fist'], handsBehind: ['grab', 'grab'], lookDown: ['grab', 'grab'], handshake: ['relaxed', 'grab'], phone: ['relaxed', 'grab'], facepalm: ['relaxed', 'open'], think: ['relaxed', 'fist'], wave: ['relaxed', 'open'], handsUp: ['open', 'open'], shrug: ['open', 'open'], presenting: ['open', 'open'] };
+  const POSE_HANDS = { evilRub: ['relaxed', 'relaxed'], lookPhone: ['relaxed', 'grab'], showPhone: ['grab', 'relaxed'], celebrate: ['fist', 'grab'], eat: ['relaxed', 'grab'], laugh: ['open', 'open'], stretch: ['open', 'open'], lean: ['fist', 'fist'], sit: ['relaxed', 'relaxed'], headHands: ['open', 'open'], point: ['relaxed', 'point'], thumbsUp: ['relaxed', 'thumbsUp'], countMoney: ['money', 'money'], rubHands: ['open', 'open'], crossed: ['fist', 'fist'], handsBehind: ['grab', 'grab'], lookDown: ['grab', 'grab'], handshake: ['relaxed', 'grab'], phone: ['relaxed', 'grab'], facepalm: ['relaxed', 'open'], think: ['relaxed', 'fist'], wave: ['relaxed', 'open'], handsUp: ['open', 'open'], shrug: ['open', 'open'], presenting: ['open', 'open'] };
   function setHand(root, side, gesture, t = 0) {
     const wr = root.userData.rig[side === 'L' ? 'wristL' : 'wristR']; if (!wr) return; const g = GEST[gesture] || GEST.relaxed; const s = side === 'L' ? -1 : 1;
     wr.userData.fingers.forEach((f, i) => { f.rotation.set(-g.f[i] * 0.6, 0, 0); if (f.userData.tip) f.userData.tip.rotation.set(-g.f[i] * 0.85, 0, 0); });
     const th = wr.userData.thumb; const rub = g.rub ? Math.sin(t * 16) * 0.35 : 0;
     th.rotation.set(-g.th[0] + rub, 0, -s * g.th[1]);
   }
-  function setPose(root, name, t = 0) {
+  function setPose(root, name, t = 0, o = {}) {
     const R = root.userData.rig; const P = poseTable(name, t); root.userData.pose = name;
+    if (o.sit || name === 'sit') { P.hipL = [-1.5, 0.06, 0]; P.hipR = [-1.5, -0.06, 0]; P.kneeL = [1.45, 0, 0]; P.kneeR = [1.45, 0, 0]; if (Math.abs(P.spine[0]) < 0.05) P.spine[0] = 0.03; }
     for (const j in P) if (R[j]) R[j].rotation.set(P[j][0], P[j][1], P[j][2]);
     const ph = POSE_HANDS[name] || ['relaxed', 'relaxed']; const hs = root.userData.p.hands || {};
     setHand(root, 'L', hs.L && hs.L !== 'auto' ? hs.L : ph[0], t); setHand(root, 'R', hs.R && hs.R !== 'auto' ? hs.R : ph[1], t);
@@ -469,6 +572,20 @@ export function createKit(THREE, RoundedBoxGeometry) {
     // walking bob
     R.hips.position.y = root.userData.p.body.legLen * root.userData.p.body.height + (name === 'walk' ? Math.abs(Math.sin(t * 6)) * 0.02 : 0);
   }
+
+  // ---------------- holding things ----------------
+  // Parent an object to the palm so it moves with the hand (never floating next to it).
+  // Grip frame: x = across the palm, y = toward the wrist (fingertips are -y), z = out of the palm.
+  function grip(root, side) { const wr = root.userData.rig[side === 'L' ? 'wristL' : 'wristR']; const a = root.userData.p.body.arms;
+    if (!wr.userData.grip) { const g = new THREE.Group(); g.position.set(0, -a * 1.35, a * 0.5); wr.add(g); wr.userData.grip = g; } return wr.userData.grip; }
+  function hold(root, side, obj, o = {}) { const g = grip(root, side); g.add(obj); obj.position.set(...(o.at || [0, 0, 0])); obj.rotation.set(...(o.rot || [0, 0, 0])); if (o.scale) obj.scale.setScalar(o.scale); obj.visible = true; return obj; }
+  // seated: lift/lower the root so the thighs rest on a seat of height seatY
+  function sitY(root, seatY = 0.45) { const p = root.userData.p, k = p.body.height, legLen = p.body.legLen * k; return seatY + 0.07 - legLen; }
+  // mouth flap for dialogue: a = 0..1 (from the voice envelope); 0 restores the expression's mouth
+  function setMouthOpen(root, a) { const R = root.userData.rig; const X = EXPRESSIONS[root.userData.expression] || EXPRESSIONS.neutral;
+    if (a > 0.06) { for (const k in R.mouth) R.mouth[k].visible = k === 'talk'; const m = R.mouth.talk; m.scale.set(0.85 + a * 0.3, 0.3 + a * 1.25, 1); }
+    else for (const k in R.mouth) R.mouth[k].visible = k === X.mouth; }
+  function blink(root, t, seed = 0) { const ph = (t + seed * 1.7) % 3.7; const b = ph < 0.13 ? Math.sin(ph / 0.13 * Math.PI) : 0; if (b <= 0) return; for (const g of root.userData.rig.eyes) g.userData.inner.scale.y *= (1 - 0.92 * b); }
 
   function deepMerge(a, b) { for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) { a[k] = deepMerge(a[k] || {}, b[k]); } else a[k] = b[k]; } return a; }
 
@@ -483,5 +600,5 @@ export function createKit(THREE, RoundedBoxGeometry) {
       body: { shoulders: 0.48 + rn() * 0.12, chest: 0.28 + rn() * 0.06, belly: rn() < 0.25 ? 0.4 + rn() * 0.5 : rn() * 0.25, height: 0.9 + rn() * 0.16 },
       outfit: { type: pick(['tee', 'tee', 'shirt', 'sweater']), top: pick(['#d65c5c', '#3a7bd5', '#76b900', '#e0c050', '#8a5cd6', '#2fb5a3', '#e08a3a', '#8fb6e0', '#f2f2f2']), pants: pick(['#2b2f3a', '#3a4a6a', '#c2a77e', '#4a4a4a', '#6b4a2e']), shoes: pick(['#1a1a1a', '#4a3424', '#f2f2f2']) },
       expression: pick(['neutral', 'happy', 'worried', 'surprised', 'neutral']) }); }
-  return { DEFAULT, PRESETS, EXPRESSIONS, POSES, GESTURES, FINISHES: ['vinyl', 'clay', 'pixar'], build, setExpression, setPose, setHand, townsperson, deepMerge, makeMat, rbox };
+  return { DEFAULT, PRESETS, EXPRESSIONS, POSES, GESTURES, FINISHES: ['vinyl', 'clay', 'pixar'], build, setExpression, setPose, setHand, hold, grip, sitY, setMouthOpen, blink, townsperson, deepMerge, makeMat, rbox };
 }

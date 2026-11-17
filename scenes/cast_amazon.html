@@ -1,0 +1,65 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas>
+<script type="module">
+// Cast preview for the Amazon video: renderAt(i) shows view i (0-5 portraits, 6+ pose/hold tests).
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createProps } from '../kit/propkit.js';
+const W = 1080, H = 1920;
+const kit = createKit(THREE, RoundedBoxGeometry); const props = createProps(THREE, kit, 'clay');
+const MAT = (c, k = 'cloth') => kit.makeMat(c, k, 'clay');
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.92;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+await document.fonts.load('900 90px Inter');
+const scene = new THREE.Scene(); scene.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture; scene.environmentIntensity = 0.3;
+scene.background = new THREE.Color(0xe9dccb);
+scene.add(new THREE.HemisphereLight(0xfff2e0, 0x6a5a4a, 0.5));
+const key = new THREE.DirectionalLight(0xfff0dc, 1.9); key.position.set(3, 6, 5); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4 }); scene.add(key);
+const rim = new THREE.DirectionalLight(0xb0c8ff, 1.2); rim.position.set(-4, 3, -4); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), MAT('#e2d3bf')); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+const IDS = ['vendedor', 'bezos', 'lucia', 'ramiro', 'brandon', 'becario'];
+const C = Object.fromEntries(IDS.map(id => { const c = kit.build(kit.PRESETS[id], 'clay'); scene.add(c); return [id, c]; }));
+// props
+const phone = props.screenPhone(); const phone2 = props.screenPhone(); const torta = props.torta(); const mug = props.mug('#f2f2f2', 'LUNES'); const PS = 1.7; // cartoon scale for hand props
+const razor = props.razor();
+function bankApp(c, w, h) { c.fillStyle = '#0d1b2a'; c.fillRect(0, 0, w, h); c.fillStyle = '#1e88e5'; c.fillRect(0, 0, w, 150); c.fillStyle = '#fff'; c.font = '800 40px Inter'; c.fillText('Mi Banco', 36, 95);
+  c.fillStyle = '#9fb3c8'; c.font = '700 34px Inter'; c.fillText('Saldo disponible', 36, 300); c.fillStyle = '#7CFFB2'; c.font = '900 92px Inter'; c.fillText('$4,000,000', 24, 410); c.fillStyle = '#9fb3c8'; c.font = '700 34px Inter'; c.fillText('MXN', 36, 465);
+  c.fillStyle = '#fff'; c.font = '700 32px Inter'; ['+ $899  Venta #10,000', '+ $899  Venta #9,999', '+ $899  Venta #9,998'].forEach((s, i) => c.fillText(s, 36, 620 + i * 80)); }
+function listing(c, w, h) { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#131921'; c.fillRect(0, 0, w, 120); c.fillStyle = '#fff'; c.font = '800 44px Inter'; c.fillText('amazon', 30, 80);
+  c.fillStyle = '#e8f6f5'; c.fillRect(30, 160, w - 60, 420); c.fillStyle = '#1fa39a'; c.fillRect(w / 2 - 50, 230, 100, 250); c.fillStyle = '#111'; c.font = '800 40px Inter'; c.fillText('Rasuradora FILO Pro', 30, 650);
+  c.fillStyle = '#e8a33a'; c.font = '900 40px Inter'; c.fillText('★★★★★ 4.6', 30, 710); c.fillStyle = '#111'; c.font = '900 64px Inter'; c.fillText('$899', 30, 800); c.fillStyle = '#188038'; c.font = '800 40px Inter'; c.fillText('10 mil+ vendidos', 30, 870); }
+phone.userData.draw(bankApp); phone2.userData.draw(listing);
+// furniture for the tests
+const chair = new THREE.Group(); chair.add(new THREE.Mesh(kit.rbox(0.5, 0.08, 0.5, 0.03), MAT('#333'))); chair.children[0].position.y = 0.42; { const b = new THREE.Mesh(kit.rbox(0.5, 0.6, 0.07, 0.03), MAT('#333')); b.position.set(0, 0.75, -0.24); chair.add(b); const l = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4), MAT('#777', 'dark')); l.position.y = 0.2; chair.add(l); }
+chair.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); scene.add(chair);
+const table = new THREE.Mesh(kit.rbox(1.4, 0.07, 0.9, 0.03), MAT('#5a3a24')); table.castShadow = table.receiveShadow = true; scene.add(table);
+const bed = new THREE.Group(); { const f = new THREE.Mesh(kit.rbox(1.1, 0.35, 2.1, 0.05), MAT('#7a5034')); f.position.y = 0.17; bed.add(f); const m = new THREE.Mesh(kit.rbox(1.0, 0.2, 2.0, 0.08), MAT('#f2efe8')); m.position.y = 0.45; bed.add(m); const pl = new THREE.Mesh(kit.rbox(0.6, 0.14, 0.32, 0.06), MAT('#ffffff')); pl.position.set(0, 0.6, -0.8); bed.add(pl); const bl = new THREE.Mesh(kit.rbox(1.06, 0.1, 1.3, 0.05), MAT('#3a6ab0')); bl.position.set(0, 0.62, 0.32); bed.add(bl); bed.userData.blanket = bl; }
+bed.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); scene.add(bed);
+const cam = new THREE.PerspectiveCamera(30, W / H, 0.05, 100);
+const hideAll = () => { for (const c of Object.values(C)) c.position.set(0, -50, 0); chair.position.y = -50; table.position.y = -50; bed.position.y = -50; };
+const look = (x, y, z, tx, ty, tz, fov = 30) => { cam.position.set(x, y, z); cam.lookAt(tx, ty, tz); cam.fov = fov; cam.updateProjectionMatrix(); };
+window.renderAt = (t) => {
+  const i = Math.floor(t + 1e-6), u = t - i; hideAll(); const T = 1.3 + u;
+  for (const c of Object.values(C)) { c.rotation.set(0, 0, 0); }
+  const show = (id, pose, expr, o = {}) => { const c = C[id]; c.position.set(0, 0, 0); kit.setPose(c, pose, T, o); kit.setExpression(c, expr); return c; };
+  if (i === 0) { const c = show('vendedor', 'celebrate', 'grin'); kit.hold(c, 'R', phone, { at: [0, -0.03, 0.012], rot: [0, 0, Math.PI], scale: PS }); look(0.6, 1.5, 3.6, 0, 1.3, 0); }
+  if (i === 1) { show('bezos', 'evilRub', 'evil'); look(0.5, 1.25, 3.4, 0, 1.3, 0); }
+  if (i === 2) { const c = show('lucia', 'point', 'smug'); c.rotation.y = 0.5; look(0.4, 1.35, 3.4, 0, 1.15, 0); }
+  if (i === 3) { const c = show('ramiro', 'eat', 'sad'); kit.hold(c, 'R', mug, { at: [0.0, -0.08, 0.06], rot: [0, Math.PI / 2, 0], scale: PS }); look(0.4, 1.35, 3.4, 0, 1.15, 0); }
+  if (i === 4) { show('brandon', 'thumbsUp', 'grin'); look(0.4, 1.4, 3.6, 0, 1.2, 0); }
+  if (i === 5) { const c = show('becario', 'eat', 'neutral'); kit.hold(c, 'R', torta, { at: [0, 0, 0.045], scale: PS }); kit.setMouthOpen(c, 0.5 + 0.3 * Math.sin(T * 9)); look(0.4, 1.3, 3.2, 0, 1.15, 0); }
+  if (i === 6) { const c = show('vendedor', 'lookPhone', 'happy'); kit.hold(c, 'R', phone, { at: [0, -0.03, 0.012], rot: [0, 0, Math.PI], scale: PS }); c.updateMatrixWorld(true); const p = phone.getWorldPosition(new THREE.Vector3()); const hp = c.userData.rig.head.getWorldPosition(new THREE.Vector3()); const e = hp.clone().add(new THREE.Vector3(0.2, 0.28, -0.55)); look(e.x, e.y, e.z, p.x, p.y, p.z, 38); }
+  if (i === 7) { const c = show('becario', 'showPhone', 'neutral', { sit: true }); c.position.y = kit.sitY(c, 0.46); chair.position.set(0, 0, -0.05); kit.hold(c, 'L', phone2, { at: [0, -0.03, 0.012], rot: [0, 0, Math.PI], scale: PS }); kit.hold(c, 'R', torta, { at: [0, 0, 0.045], scale: PS }); kit.setMouthOpen(c, 0.6); look(0.3, 1.2, 2.6, 0, 0.95, 0); }
+  if (i === 8) { const c = show('bezos', 'lean', 'grin'); table.position.set(0, 0.745, 0.9); kit.setMouthOpen(c, 0.8); look(0.5, 1.15, 3.6, 0, 1.15, 0.2, 32); }
+  if (i === 9) { const c = show('vendedor', 'sleep', 'happy'); bed.position.set(0, 0, 0); c.rotation.set(-Math.PI / 2, 0, 0); c.position.set(0, 0.72, 0.95); for (const g of c.userData.rig.eyes) g.userData.inner.scale.y = 0.08; bed.userData.blanket.scale.set(1, 3.6, 1.15); bed.userData.blanket.position.set(0, 0.72, 0.25); look(1.9, 2.4, 1.6, 0, 0.6, -0.3, 34); }
+  r.render(scene, cam); return true;
+};
+window.DBG = { C, kit, THREE }; window.READY = true;
+</script></body></html>
