@@ -1,0 +1,38 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas>
+<script type="module">
+// Reusable "evil plan" animation preview: kit.setPose(c, 'evilRub', t) + kit.setExpression(c, 'evil') on any character.
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+const W = 1080, H = 1920;
+const Q = new URLSearchParams(location.search); const IDS = (Q.get('ids') || 'banquero,rico,gordo').split(',');
+const kit = createKit(THREE, RoundedBoxGeometry);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.95;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); scene.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture; scene.environmentIntensity = 0.25;
+scene.background = new THREE.Color(0x2a1d24); scene.fog = new THREE.Fog(0x2a1d24, 8, 20);
+scene.add(new THREE.HemisphereLight(0xffd8c0, 0x201018, 0.5));
+const key = new THREE.SpotLight(0xffc89a, 140, 25, 0.55, 0.6); key.position.set(3.5, 5, 4); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.target.position.set(0, 1, 0); scene.add(key, key.target);
+const under = new THREE.PointLight(0xff5a3a, 6, 6); under.position.set(0, 0.4, 1.6); scene.add(under);            // sinister glow from below
+const rim = new THREE.DirectionalLight(0x8fb0ff, 2.2); rim.position.set(-4, 3, -4); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 64), kit.makeMat('#3a2a30', 'cloth', 'clay')); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+const chars = IDS.map((id, i) => { const c = kit.build(kit.deepMerge(structuredClone(kit.PRESETS[id]), { glasses: { style: kit.PRESETS[id].glasses.style === 'shades' ? 'none' : kit.PRESETS[id].glasses.style } }), 'clay'); c.position.x = (i - (IDS.length - 1) / 2) * 1.25; c.position.z = i === (IDS.length - 1) / 2 ? 0.35 : 0; c.rotation.y = (i - (IDS.length - 1) / 2) * -0.25; scene.add(c); return c; });
+const hero = chars[Math.floor(chars.length / 2)];
+const cam = new THREE.PerspectiveCamera(36, W / H, 0.05, 100);
+const sm = (a, b, t) => { const x = Math.min(1, Math.max(0, (t - a) / (b - a))); return x * x * (3 - 2 * x); };
+window.renderAt = (t) => {
+  chars.forEach((c, i) => { kit.setPose(c, 'evilRub', t + i * 0.13); kit.setExpression(c, t < 0.35 + i * 0.1 ? 'smug' : 'evil'); });
+  under.intensity = 4 + 2 * Math.sin(t * 6);
+  const hp = hero.position.clone();
+  if (t < 3.0) { const k = sm(0, 3.0, t); cam.position.set(hp.x + 0.35 - k * 0.2, 1.6, hp.z + 2.5 - k * 0.6); cam.lookAt(hp.x, 1.45 + k * 0.05, hp.z); cam.fov = 36; }
+  else { const k = sm(3.0, 6.5, t); const a = -0.25 + k * 0.4; cam.position.set(Math.sin(a) * 5.2, 1.5, Math.cos(a) * 5.2); cam.lookAt(0, 1.25, 0); cam.fov = 38; }
+  cam.updateProjectionMatrix(); r.render(scene, cam); return true;
+};
+window.READY = true;
+</script></body></html>

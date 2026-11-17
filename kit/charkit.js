@@ -122,9 +122,10 @@ export function createKit(THREE, RoundedBoxGeometry) {
     angry:     { open: 0.8, brow: [-0.03, -0.45], mouth: 'frown', pupil: 1 },
     worried:   { open: 1.0, brow: [0.05, 0.4], mouth: 'wavy', pupil: 0.9 },
     smug:      { open: 0.6, brow: [0.02, -0.12], mouth: 'smirk', pupil: 1 },
+    evil:      { open: 0.42, brow: [-0.05, -0.62], mouth: 'evil', pupil: 0.8, pupilX: 0.3 },
     sad:       { open: 0.8, brow: [0.02, 0.45], mouth: 'frown', pupil: 1 },
   };
-  const POSES = ['idle', 'point', 'shrug', 'handsUp', 'facepalm', 'think', 'crossed', 'wave', 'walk', 'presenting', 'podium', 'rubHands', 'handsBehind', 'handshake', 'phone', 'countMoney', 'thumbsUp', 'lookDown'];
+  const POSES = ['evilRub', 'idle', 'point', 'shrug', 'handsUp', 'facepalm', 'think', 'crossed', 'wave', 'walk', 'presenting', 'podium', 'rubHands', 'handsBehind', 'handshake', 'phone', 'countMoney', 'thumbsUp', 'lookDown'];
   const GESTURES = ['open', 'fist', 'point', 'thumbsUp', 'money', 'peace', 'grab', 'relaxed'];
 
   // ---------------- materials (finishes) ----------------
@@ -270,6 +271,8 @@ export function createKit(THREE, RoundedBoxGeometry) {
     mk('grin', g => { const d = add(g, new THREE.CircleGeometry(mw * 1.1, 32, Math.PI, Math.PI), mouthInM); add(g, rbox(mw * 2.0, mw * 0.32, 0.01, 0.004), teethM, 0, -mw * 0.14, 0.004); const l = add(g, new THREE.TorusGeometry(mw * 1.1, 0.008, 8, 32, Math.PI), lipsM); l.rotation.z = Math.PI; add(g, rbox(mw * 2.25, 0.014, 0.012, 0.006), lipsM, 0, 0, 0.002); });
     mk('o', g => { const d = add(g, new THREE.CircleGeometry(mw * 0.55, 24), mouthInM); d.scale.y = 1.25; const l = add(g, new THREE.TorusGeometry(mw * 0.55, 0.015, 8, 24), lipsM); l.scale.y = 1.25; });
     mk('scream', g => { const d = add(g, new THREE.CircleGeometry(mw * 0.85, 24), mouthInM); d.scale.y = 1.5; const l = add(g, new THREE.TorusGeometry(mw * 0.85, 0.015, 8, 24), lipsM); l.scale.y = 1.5; add(g, rbox(mw * 1.2, mw * 0.25, 0.01, 0.004), teethM, 0, mw * 1.05, 0.004); });
+    mk('evil', g => { g.rotation.z = 0.06; const d = add(g, new THREE.CircleGeometry(mw * 1.35, 32, Math.PI, Math.PI), mouthInM); d.scale.y = 0.42; add(g, rbox(mw * 2.4, mw * 0.24, 0.01, 0.004), teethM, 0, -mw * 0.11, 0.004);
+      add(g, rbox(mw * 2.75, 0.016, 0.012, 0.006), lipsM, 0, 0, 0.002); for (const s of [-1, 1]) { const c = add(g, new THREE.TorusGeometry(mw * 0.28, 0.013, 6, 12, Math.PI * 0.6), lipsM); c.position.set(s * mw * 1.38, mw * 0.2, 0.002); c.rotation.z = s > 0 ? -0.2 : Math.PI + 0.2 - Math.PI * 0.6; } });
     mk('smirk', g => { const t = add(g, new THREE.TorusGeometry(mw * 0.9, 0.015, 8, 24, Math.PI * 0.5), lipsM); t.rotation.z = Math.PI * 1.5; t.position.set(-mw * 0.1, mw * 0.55, 0); add(g, rbox(mw * 0.9, 0.016, 0.02, 0.007), lipsM, -mw * 0.5, -mw * 0.33, 0); });
     mk('wavy', g => { for (let i = 0; i < 3; i++) { const t = add(g, new THREE.TorusGeometry(mw * 0.3, 0.009, 6, 12, Math.PI), lipsM); t.position.x = (i - 1) * mw * 0.6; t.rotation.z = i % 2 ? Math.PI : 0; } });
 
@@ -407,6 +410,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
     root.userData.expression = name;
     const open = clamp(p.eyes.open * X.open, 0.12, 1.6);
     for (const g of R.eyes) { const u = g.userData; u.inner.scale.y = open; u.pupil.scale.set(X.pupil, X.pupil, 0.3); u.iris.scale.set(1, 1, 0.35);
+      const px = (X.pupilX || 0) * p.eyes.size * 0.45; u.pupil.position.x = px; u.iris.position.x = px;
       u.lid.position.y = p.eyes.size * (0.55 + 0.45 * open); u.lid.scale.y = 1; }
     for (const br of R.brows) { const s = br.userData.side; br.position.y = br.userData.y0 + X.brow[0] * 0.5 - (1 - Math.min(1, open)) * 0.02; br.rotation.z = s * X.brow[1] * -1; }
     for (const k in R.mouth) R.mouth[k].visible = k === X.mouth;
@@ -427,6 +431,9 @@ export function createKit(THREE, RoundedBoxGeometry) {
       case 'podium': P.shoulderL = [-0.55, 0, -0.12]; P.shoulderR = [-0.55, 0, 0.12]; P.elbowL = [-0.95, 0, 0]; P.elbowR = [-0.95, 0, 0]; P.head[0] = 0.05; break;
       case 'wave': P.shoulderR = [0, 0, 2.6]; P.elbowR = [0, 0, 0.55 + Math.sin(t * 9) * 0.35]; P.head[2] = 0.08; break;
       case 'presenting': P.shoulderR = [-0.55, 0, 0.5]; P.elbowR = [-0.75, 0, 0]; P.wristR = [0, 0, 0.5]; P.shoulderL = [-0.55, 0, -0.5]; P.elbowL = [-0.75, 0, 0]; P.wristL = [0, 0, -0.5]; break;
+      case 'evilRub': { const r = Math.sin(t * 2 * Math.PI * 4.5) * 0.11; const sway = Math.sin(t * 1.3);
+        P.spine = [0.16 + Math.sin(t * 9) * 0.01, sway * 0.05, 0]; P.neck = [0.1, 0, 0]; P.head = [0.1, -sway * 0.08, sway * 0.07];
+        P.shoulderL = [-0.75, 0, 0.78]; P.shoulderR = [-0.75, 0, -0.78]; P.elbowL = [-1.15, 1.55 + r, 0]; P.elbowR = [-1.15, -1.55 + r, 0]; P.wristL = [0, -1.3, r * 1.2]; P.wristR = [0, 1.3, r * 1.2]; break; }
       case 'rubHands': { const r = Math.sin(t * 14) * 0.08; P.shoulderL = [-0.7, 0, 0.42]; P.shoulderR = [-0.7, 0, -0.42]; P.elbowL = [-1.1, 0.75 + r, 0]; P.elbowR = [-1.1, -0.75 + r, 0]; P.head[0] = 0.08; break; }
       case 'handsBehind': P.shoulderL = [0.45, 0, 0.12]; P.shoulderR = [0.45, 0, -0.12]; P.elbowL = [-0.55, -0.6, 0]; P.elbowR = [-0.55, 0.6, 0]; P.spine[0] = -0.05; P.head[0] = -0.08; break;
       case 'handshake': P.shoulderR = [-0.85, 0, 0.05]; P.elbowR = [-0.45, 0, 0]; P.wristR = [0, Math.PI / 2, 0]; P.elbowR[0] += Math.sin(t * 9) * 0.06; break;
@@ -446,7 +453,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
     thumbsUp: { f: [1.7, 1.7, 1.7, 1.7], th: [0, -2.4] }, peace: { f: [0, 0, 1.7, 1.7], th: [0.9, 0.2] },
     grab: { f: [0.9, 0.95, 1.0, 1.0], th: [0.6, 0.4] }, money: { f: [0.9, 1.0, 1.1, 1.2], th: [0.6, 0.3], rub: true },
   };
-  const POSE_HANDS = { point: ['relaxed', 'point'], thumbsUp: ['relaxed', 'thumbsUp'], countMoney: ['money', 'money'], rubHands: ['open', 'open'], crossed: ['fist', 'fist'], handsBehind: ['grab', 'grab'], lookDown: ['grab', 'grab'], handshake: ['relaxed', 'grab'], phone: ['relaxed', 'grab'], facepalm: ['relaxed', 'open'], think: ['relaxed', 'fist'], wave: ['relaxed', 'open'], handsUp: ['open', 'open'], shrug: ['open', 'open'], presenting: ['open', 'open'] };
+  const POSE_HANDS = { evilRub: ['relaxed', 'relaxed'], point: ['relaxed', 'point'], thumbsUp: ['relaxed', 'thumbsUp'], countMoney: ['money', 'money'], rubHands: ['open', 'open'], crossed: ['fist', 'fist'], handsBehind: ['grab', 'grab'], lookDown: ['grab', 'grab'], handshake: ['relaxed', 'grab'], phone: ['relaxed', 'grab'], facepalm: ['relaxed', 'open'], think: ['relaxed', 'fist'], wave: ['relaxed', 'open'], handsUp: ['open', 'open'], shrug: ['open', 'open'], presenting: ['open', 'open'] };
   function setHand(root, side, gesture, t = 0) {
     const wr = root.userData.rig[side === 'L' ? 'wristL' : 'wristR']; if (!wr) return; const g = GEST[gesture] || GEST.relaxed; const s = side === 'L' ? -1 : 1;
     wr.userData.fingers.forEach((f, i) => { f.rotation.set(-g.f[i] * 0.6, 0, 0); if (f.userData.tip) f.userData.tip.rotation.set(-g.f[i] * 0.85, 0, 0); });
@@ -458,6 +465,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
     for (const j in P) if (R[j]) R[j].rotation.set(P[j][0], P[j][1], P[j][2]);
     const ph = POSE_HANDS[name] || ['relaxed', 'relaxed']; const hs = root.userData.p.hands || {};
     setHand(root, 'L', hs.L && hs.L !== 'auto' ? hs.L : ph[0], t); setHand(root, 'R', hs.R && hs.R !== 'auto' ? hs.R : ph[1], t);
+    if (name === 'evilRub') for (const w of [R.wristL, R.wristR]) w.userData.fingers.forEach((f, i) => { const c = 0.35 + 0.3 * Math.sin(t * 2 * Math.PI * 4.5 + i * 0.7); f.rotation.x = -c * 0.6; if (f.userData.tip) f.userData.tip.rotation.x = -c * 0.85; });
     // walking bob
     R.hips.position.y = root.userData.p.body.legLen * root.userData.p.body.height + (name === 'walk' ? Math.abs(Math.sin(t * 6)) * 0.02 : 0);
   }
