@@ -583,7 +583,7 @@ export function createKit(THREE, RoundedBoxGeometry) {
   function sitY(root, seatY = 0.45) { const p = root.userData.p, k = p.body.height, legLen = p.body.legLen * k; return seatY + 0.07 - legLen; }
   // mouth flap for dialogue: a = 0..1 (from the voice envelope); 0 restores the expression's mouth
   function setMouthOpen(root, a) { const R = root.userData.rig; const X = EXPRESSIONS[root.userData.expression] || EXPRESSIONS.neutral;
-    if (a > 0.06) { for (const k in R.mouth) R.mouth[k].visible = k === 'talk'; const m = R.mouth.talk; m.scale.set(0.85 + a * 0.3, 0.3 + a * 1.25, 1); }
+    if (a > 0.06) { for (const k in R.mouth) R.mouth[k].visible = k === 'talk'; const m = R.mouth.talk; m.scale.set(0.8 + a * 0.22, 0.22 + a * 0.78, 1); }
     else for (const k in R.mouth) R.mouth[k].visible = k === X.mouth; }
   function blink(root, t, seed = 0) { const ph = (t + seed * 1.7) % 3.7; const b = ph < 0.13 ? Math.sin(ph / 0.13 * Math.PI) : 0; if (b <= 0) return; for (const g of root.userData.rig.eyes) g.userData.inner.scale.y *= (1 - 0.92 * b); }
 

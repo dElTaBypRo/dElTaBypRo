@@ -1,0 +1,345 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}#gl{position:absolute;left:0;top:0;visibility:hidden}#out{position:absolute;left:0;top:0}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas><canvas id="out" width="1080" height="1920"></canvas>
+<script type="module">
+// "La rasuradora" — Amazon parody with no narrator. The timeline is driven by words_amazon.json
+// (lines, word timings and per-speaker mouth envelopes, built by tools/assemble_amazon.py).
+// Minimal UI: only small speaker-coloured captions; everything else is shown on screens inside the scene.
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createProps } from '../kit/propkit.js';
+import { createAmazonSets } from '../kit/amazonsets.js';
+const W = 1080, H = 1920; const Q = new URLSearchParams(location.search); const SUBMAX = +(Q.get('sub') || 2);
+const kit = createKit(THREE, RoundedBoxGeometry); const props = createProps(THREE, kit, 'clay'); const sets = createAmazonSets(THREE, kit, props);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const sm = (a, b, t) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+const win = (a, b, t, f = 0.2) => sm(a, a + f, t) * (1 - sm(b - f, b, t));
+const lerp = (a, b, x) => a + (b - a) * x;
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const vl = (a, b, k) => a.clone().lerp(b, k);
+
+// ---------- dialogue data ----------
+const DATA = await (await fetch('./words_amazon.json')).json();
+const words = DATA.words; const LN = Object.fromEntries(DATA.lines.map(l => [l.id, l])); const END = DATA.end;
+const norm = s => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9%]/g, '');
+const wAt = (line, txt, k = 0) => { const ws = words.filter(w => w.line === line && norm(w.text) === norm(txt)); const w = ws[k] || ws[0]; if (!w) console.error('wAt miss', line, txt); return w ? w.start : LN[line].start; };
+const mouthAt = (spk, t) => { const a = DATA.mouth[spk]; if (!a) return 0; const f = t * DATA.fps, i = Math.floor(f); if (i < 0 || i + 1 >= a.length) return 0; return lerp(a[i], a[i + 1], f - i); };
+
+// ---------- renderer ----------
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.95;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+const out = document.getElementById('out').getContext('2d');
+await document.fonts.load('900 90px Inter'); await document.fonts.load('800 90px Inter'); await document.fonts.load('700 90px Inter');
+const env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture;
+const mk = (bg) => { const s = new THREE.Scene(); s.environment = env; s.background = new THREE.Color(bg); return s; };
+const S = { bed: mk(0x05070f), hq: mk(0x050816), meet: mk(0x0b0c10), fac: mk(0x15181d) };
+const bedroom = sets.bedroom(); S.bed.add(bedroom); const BU = bedroom.userData;
+const hq = sets.hqExterior(); S.hq.add(hq);
+const meet = sets.meetingRoom(); S.meet.add(meet); const MU = meet.userData;
+const fac = sets.factory(); S.fac.add(fac); const FU = fac.userData;
+const camera = new THREE.PerspectiveCamera(45, W / H, 0.03, 600);
+
+// ---------- cast ----------
+const ENV = { bed: 0.12, meet: 0.3, fac: 0.5 };
+const mkC = (id, sc) => { const c = kit.build(kit.PRESETS[id], 'clay'); S[sc].add(c); sets.setEnvIntensity(c, ENV[sc]); return c; };
+const tono = mkC('vendedor', 'bed');
+const bezos = mkC('bezos', 'meet'), lucia = mkC('lucia', 'meet'), ramiro = mkC('ramiro', 'meet'), brandon = mkC('brandon', 'meet'), kevin = mkC('becario', 'meet');
+const bezosF = mkC('bezos', 'fac'), kevinF = mkC('becario', 'fac');
+// hand props (cartoon scale), parented to the palm so they move with the hand
+const PS = 1.7; const PH = { at: [0, -0.03, 0.012], rot: [0, 0, Math.PI], scale: PS }; const TORTA = { at: [0, 0, 0.045], scale: PS };
+const phoneT = kit.hold(tono, 'R', props.screenPhone(), PH);
+const phoneK = kit.hold(kevin, 'L', props.screenPhone(), PH);
+const tortaK = kit.hold(kevin, 'R', props.torta(), TORTA);
+const mugR = kit.hold(ramiro, 'R', props.mug('#f2f2f2', 'LUNES'), { at: [0.0, -0.08, 0.06], rot: [0, Math.PI / 2, 0], scale: PS });
+const tortaB = kit.hold(bezosF, 'R', props.torta(), TORTA);
+const tortaKF = kit.hold(kevinF, 'R', props.torta(), TORTA);
+MU.mugs[1].visible = false; // Ramiro holds his own mug
+bedroom.traverse(o => { if (o.name === '' && o.isGroup && Math.abs(o.position.x + 1.55) < 0.01 && Math.abs(o.position.z + 0.65) < 0.01) o.rotation.y = -Math.PI / 2; }); // square the desk chair to the desk
+// bald-head glint (Brandon's compliment)
+const glintTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,240,0.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? 10 : 62; g.lineTo(64 + Math.cos(a) * rr, 64 + Math.sin(a) * rr); } g.closePath(); g.fill(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const glint = new THREE.Sprite(new THREE.SpriteMaterial({ map: glintTex, transparent: true, depthWrite: false, toneMapped: false })); bezos.userData.rig.head.add(glint); glint.position.set(0.1, 0.3, 0.16); glint.scale.setScalar(0.0001);
+const evilL = new THREE.PointLight(0xff3a2a, 0, 5, 1.6); evilL.position.set(0, 0.55, -1.45); meet.add(evilL);
+
+// ---------- screen content ----------
+const F = (wt, px) => `${wt} ${Math.round(px)}px Inter`;
+function rrect(c, x, y, w, h, R) { c.beginPath(); c.roundRect(x, y, w, h, R); }
+function razorIcon(c, x, y, s, body = '#1fa39a') { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = body; c.beginPath(); c.roundRect(-30, -40, 60, 150, 22); c.fill(); c.fillStyle = '#111'; c.beginPath(); c.roundRect(-24, -10, 48, 80, 14); c.fill(); c.beginPath(); c.roundRect(-42, -72, 84, 34, 12); c.fill(); c.fillStyle = '#d8dde3'; for (const [dx, dy] of [[-20, -78], [20, -78], [0, -86]]) { c.beginPath(); c.ellipse(dx, dy, 15, 6, 0, 0, 7); c.fill(); } c.restore(); }
+function stars(c, x, y, size, n, col = '#e8a33a') { c.fillStyle = col; c.font = F(900, size); c.fillText('★'.repeat(n) + '☆'.repeat(5 - n), x, y); }
+// laptop: sales counter hits 10,000
+function laptopDraw(t) { return (c, w, h) => { const n = t < 0.0 ? 9998 : t < 0.18 ? 9998 : t < 0.36 ? 9999 : 10000; const hit = n === 10000;
+  const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, hit ? '#1fa39a' : '#1d2733'); g.addColorStop(1, hit ? '#0d5f59' : '#10161d'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.textAlign = 'center'; c.font = F(900, h * (hit ? 0.11 : 0.09)); c.fillStyle = hit ? '#ffcf3a' : '#ffffff'; c.fillText(hit ? '¡META CUMPLIDA!' : 'FILO Pro · ventas', w / 2, h * 0.2); c.font = F(900, h * 0.3); c.fillStyle = hit ? '#ffffff' : '#9fb3c8'; c.fillText(n.toLocaleString('en-US'), w / 2, h * 0.52);
+  if (hit) { for (let i = 0; i < 46; i++) { const k = (t - 0.36) * 0.7; c.fillStyle = ['#ffcf3a', '#ff6b6b', '#ffffff', '#7CFFB2'][i % 4]; c.fillRect((i * 97 + 13) % w, ((i * 53) % (h * 0.5) + k * h * (0.6 + (i % 5) * 0.15)) % h, 9, 15); } }
+  c.textAlign = 'left'; }; }
+// phone apps (canvas 540 x 1094)
+function bankApp(c, w, h) { c.fillStyle = '#0d1b2a'; c.fillRect(0, 0, w, h); c.fillStyle = '#1e88e5'; c.fillRect(0, 0, w, 150); c.fillStyle = '#fff'; c.font = F(800, 40); c.fillText('Mi Banco', 36, 95);
+  c.fillStyle = '#9fb3c8'; c.font = F(700, 36); c.fillText('Saldo disponible', 36, 300); c.fillStyle = '#7CFFB2'; c.font = F(900, 96); c.fillText('$4,000,000', 20, 415); c.fillStyle = '#9fb3c8'; c.font = F(700, 34); c.fillText('MXN', 36, 470);
+  c.fillStyle = '#fff'; c.font = F(700, 32); ['+ $899  Venta #10,000', '+ $899  Venta #9,999', '+ $899  Venta #9,998', '+ $899  Venta #9,997'].forEach((s, i) => c.fillText(s, 36, 620 + i * 80)); }
+function salesApp(t) { return (c, w, h) => { c.fillStyle = '#f4f6fa'; c.fillRect(0, 0, w, h); c.fillStyle = '#1fa39a'; c.fillRect(0, 0, w, 150); c.fillStyle = '#fff'; c.font = F(800, 40); c.fillText('FILO · Mis ventas', 30, 95);
+  c.fillStyle = '#5a6475'; c.font = F(800, 36); c.fillText('VENTAS HOY', 30, 250); c.fillStyle = '#d93025'; c.font = F(900, 200); c.fillText('2', 30, 450);
+  const days = [98, 104, 101, 97, 108, 103, 2]; const x0 = 40, y0 = 900, bw = 58; c.fillStyle = '#5a6475'; c.font = F(700, 26);
+  days.forEach((v, i) => { const k = i < 6 ? 1 : clamp((t - 0.1) / 0.5); const hh = v * 3.2 * (i < 6 ? 1 : k + (1 - k) * 30); c.fillStyle = i < 6 ? '#1fa39a' : '#d93025'; c.fillRect(x0 + i * 68, y0 - hh, bw, hh); c.fillStyle = '#5a6475'; c.fillText(['L', 'M', 'M', 'J', 'V', 'S', 'HOY'][i], x0 + i * 68 + (i < 6 ? 18 : 0), y0 + 40); });
+  c.fillStyle = '#111'; c.font = F(800, 30); c.fillText('100 al día  →  2', 30, 1010); }; }
+function listingApp(c, w, h) { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#131921'; c.fillRect(0, 0, w, 130); c.fillStyle = '#fff'; c.font = F(800, 46); c.fillText('amazon', 30, 86);
+  c.fillStyle = '#e8f6f5'; c.fillRect(30, 160, w - 60, 430); razorIcon(c, w / 2, 400, 1.35); c.fillStyle = '#111'; c.font = F(800, 42); c.fillText('Rasuradora FILO Pro', 30, 660);
+  c.fillStyle = '#5a6475'; c.font = F(700, 30); c.fillText('Vendedor: Toño', 30, 710); stars(c, 30, 775, 40, 5); c.fillStyle = '#111'; c.font = F(700, 34); c.fillText('4.6', 270, 772);
+  c.fillStyle = '#111'; c.font = F(900, 72); c.fillText('$899', 30, 870); c.fillStyle = '#188038'; c.font = F(800, 40); c.fillText('10 mil+ vendidos', 30, 940); }
+function searchApp(t) { return (c, w, h) => { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#131921'; c.fillRect(0, 0, w, 200); c.fillStyle = '#fff'; c.font = F(800, 44); c.fillText('amazon', 30, 80);
+  c.fillStyle = '#fff'; rrect(c, 24, 110, w - 48, 66, 14); c.fill(); c.fillStyle = '#333'; c.font = F(700, 32); c.fillText('rasuradora', 44, 154);
+  const card = (y, top) => { c.fillStyle = top ? '#fff8e6' : '#ffffff'; c.fillRect(0, y, w, 400); c.fillStyle = '#e6e6e6'; c.fillRect(0, y + 398, w, 2);
+    c.fillStyle = top ? '#e9edf2' : '#e8f6f5'; c.fillRect(24, y + 30, 170, 300); razorIcon(c, 109, y + 190, 0.95, top ? '#2c3a4c' : '#1fa39a');
+    c.fillStyle = '#111'; c.font = F(800, 30); c.fillText(top ? 'amazon básicos' : 'FILO Pro', 214, y + 66); c.font = F(700, 26); c.fillStyle = '#333'; c.fillText(top ? 'Rasuradora eléctrica' : 'Rasuradora eléctrica', 214, y + 104);
+    stars(c, 214, y + 150, 30, top ? 5 : 5); c.fillStyle = '#333'; c.font = F(700, 26); c.fillText(top ? '4.8' : '4.6', 400, y + 148);
+    c.fillStyle = '#111'; c.font = F(900, 52); c.fillText(top ? '$399' : '$899', 214, y + 220);
+    c.font = F(800, 26); c.fillStyle = top ? '#188038' : '#d93025'; c.fillText(top ? '+7 mil ventas' : '2 ventas hoy', 214, y + 266);
+    if (top) { c.fillStyle = '#ff9900'; rrect(c, 214, y + 290, 230, 44, 10); c.fill(); c.fillStyle = '#111'; c.font = F(800, 26); c.fillText('Agregado hoy', 228, y + 322); c.fillStyle = '#ff9900'; c.font = F(900, 34); c.fillText('#1', 470, y + 66); } };
+  card(220, true); card(620, false); }; }
+// meeting-room screen (1280 x 720). Close portrait shots only see the middle third, so content lives in a column x ≈ 440..840.
+const SX0 = 440, SX1 = 840, SCX = 640, SW = SX1 - SX0;
+function slideBg(c, w, h, col = '#0f1724') { c.fillStyle = col; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(255,255,255,0.04)'; for (let i = 0; i < 12; i++) c.fillRect(0, i * 60, w, 1); }
+function ctext(c, s, y, size, col = '#ffffff', wt = 900) { c.fillStyle = col; c.font = F(wt, size); c.textAlign = 'center'; c.fillText(s, SCX, y); c.textAlign = 'left'; }
+function headphones(c, x, y, s) { c.save(); c.translate(x, y); c.scale(s, s); c.strokeStyle = '#ffffff'; c.lineWidth = 16; c.beginPath(); c.arc(0, 10, 70, Math.PI, 0); c.stroke(); c.fillStyle = '#3f6fb5'; rrect(c, -92, 0, 44, 80, 16); c.fill(); rrect(c, 48, 0, 44, 80, 16); c.fill(); c.restore(); }
+function meetSlide(t) { return (c, w, h) => {
+  const sig = wAt('B2', 'siguiente'), ram = LN.R1.start, bra = LN.BR1.start, idea = LN.B5.start, plan = wAt('B6', 'saquen'), copyT = wAt('B6', 'haganla'), topT = wAt('B6', 'ponganla'), eu = LN.L2.start - 0.4;
+  if (t < sig) { slideBg(c, w, h); ctext(c, 'PRODUCTOS', 78, 50); ctext(c, 'GANADORES', 134, 50); ctext(c, 'SEMANA 47', 172, 26, '#9fb3c8', 700);
+    const au = wAt('L1', 'audifonos'), pct = wAt('L1', '60%'), fab = wAt('L1', 'fabricar');
+    if (t < au) { for (let i = 0; i < 4; i++) { const x = SX0 + (i % 2) * 210, y = 205 + Math.floor(i / 2) * 230; c.fillStyle = '#1b2638'; rrect(c, x, y, 190, 210, 22); c.fill(); c.fillStyle = '#3a4a62'; c.font = F(900, 130); c.textAlign = 'center'; c.fillText('?', x + 95, y + 155); c.textAlign = 'left'; } }
+    else { const k = clamp((t - au) / 0.3); c.fillStyle = '#1b2638'; rrect(c, SX0, 200, SW, 500, 30); c.fill(); headphones(c, SCX, 250, 1.3 * (0.6 + 0.4 * k)); ctext(c, 'Audífonos', 400, 40); ctext(c, 'con cancelación de ruido', 436, 24, '#9fb3c8', 700);
+      if (t > pct) { const p = clamp((t - pct) / 0.25); ctext(c, '60%', 618, 120 * (0.7 + 0.3 * p), '#7CFFB2'); ctext(c, 'DE MARGEN', 652, 26, '#9fb3c8', 800); }
+      if (t > fab) { c.fillStyle = '#ffcf3a'; rrect(c, SX0 + 14, 664, SW - 28, 46, 14); c.fill(); ctext(c, '¿FABRICAR UNO MEJOR?', 696, 24, '#111'); } }
+    if (t > sig - 0.02) { c.fillStyle = 'rgba(217,48,37,0.85)'; c.fillRect(0, 0, w, h); ctext(c, '✕', 420, 260, '#ffffff'); } return; }
+  if (t < bra) { slideBg(c, w, h, '#1a1d22'); if (t < ram) { ctext(c, 'SIGUIENTE…', 380, 56, '#9fb3c8'); return; }
+    ctext(c, 'LO DE SIEMPRE', 84, 46); const items = [['PILAS', '#e0c050'], ['CABLES', '#5a8fd6'], ['PAPEL DE BAÑO', '#f2f2f2']];
+    items.forEach(([s, col], i) => { const k = clamp((t - wAt('R1', ['pilas', 'cables', 'papel'][i]) + 0.1) / 0.25); if (k <= 0) return; const x = SX0, y = [108, 268, 525][i]; c.globalAlpha = k; c.fillStyle = '#2a2f38'; rrect(c, x, y, SW, 145, 22); c.fill(); c.fillStyle = col;
+      if (i === 0) { rrect(c, x + 50, y + 28, 50, 100, 10); c.fill(); c.fillStyle = '#333'; c.fillRect(x + 64, y + 18, 22, 12); }
+      if (i === 1) { c.strokeStyle = col; c.lineWidth = 10; c.beginPath(); c.moveTo(x + 30, y + 40); c.bezierCurveTo(x + 140, y + 40, x + 20, y + 110, x + 120, y + 110); c.stroke(); c.fillStyle = '#ddd'; c.fillRect(x + 112, y + 100, 26, 20); }
+      if (i === 2) { c.beginPath(); c.ellipse(x + 78, y + 72, 46, 52, 0, 0, 7); c.fill(); c.fillStyle = '#bbb'; c.beginPath(); c.ellipse(x + 78, y + 72, 14, 17, 0, 0, 7); c.fill(); }
+      c.fillStyle = '#fff'; c.font = F(800, i === 2 ? 30 : 38); c.fillText(s, x + 165, y + 86); c.globalAlpha = 1; });
+    c.strokeStyle = '#9fb3c8'; c.lineWidth = 5; c.beginPath(); c.moveTo(SX0 + 20, 684); c.lineTo(SX1 - 20, 684); c.stroke(); ctext(c, 'ventas: igual que siempre', 712, 22, '#9fb3c8', 800); return; }
+  if (t < idea) { slideBg(c, w, h, '#2a1a3a'); ctext(c, 'PRODUCTO GANADOR:', 72, 34, '#ffcf3a');
+    c.fillStyle = '#e3a684'; rrect(c, SCX - 110, 105, 220, 230, 64); c.fill(); c.fillStyle = 'rgba(255,255,255,0.7)'; c.beginPath(); c.ellipse(SCX - 36, 142, 38, 14, -0.4, 0, 7); c.fill(); c.fillStyle = '#222'; c.beginPath(); c.arc(SCX - 46, 225, 11, 0, 7); c.arc(SCX + 46, 225, 11, 0, 7); c.fill(); c.strokeStyle = '#222'; c.lineWidth = 8; c.beginPath(); c.arc(SCX, 262, 46, 0.2, Math.PI - 0.2); c.stroke();
+    ctext(c, 'EL JEFE', 420, 72); c.textAlign = 'center'; stars(c, SCX, 580, 52, 5, '#ffcf3a'); c.textAlign = 'left'; if (t > wAt('BR1', 'aerodinamica') - 0.2) ctext(c, 'aerodinámico ✓', 650, 32, '#7fc8ff', 800); return; }
+  if (t < plan) { // Kevin's find, mirrored on the big screen
+    c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = '#131921'; c.fillRect(0, 0, w, 80); c.fillStyle = '#fff'; c.font = F(800, 40); c.fillText('amazon', SX0, 56);
+    c.fillStyle = '#e8f6f5'; c.fillRect(SX0, 96, SW, 250); razorIcon(c, SCX, 236, 1.05); c.fillStyle = '#111'; c.font = F(800, 40); c.fillText('FILO Pro', SX0, 392); stars(c, SX0, 432, 30, 5); c.fillStyle = '#111'; c.font = F(700, 26); c.fillText('4.6', SX0 + 190, 430);
+    c.font = F(900, 84); c.fillText('$899', SX0, 596); c.fillStyle = '#188038'; c.font = F(800, 32); c.fillText('10 mil+ vendidos', SX0, 640); c.fillStyle = '#5a6475'; c.font = F(700, 26); c.fillText('Vendedor: Toño', SX0, 684); return; }
+  if (t < copyT) { slideBg(c, w, h, '#101826'); ctext(c, 'DATOS DEL', 66, 40, '#ff9900'); ctext(c, 'VENDEDOR', 112, 40, '#ff9900'); ctext(c, 'FILO Pro · Toño · CONFIDENCIAL', 146, 20, '#9fb3c8', 700);
+    const rows = [['QUIÉN COMPRA', 'hombres 25–40', wAt('B6', 'quien')], ['CUÁNTO PAGA', '$899', wAt('B6', 'cuanto')], ['CADA CUÁNDO', 'cada 2 años', wAt('B6', 'cada')]];
+    rows.forEach(([a, b, at], i) => { const k = clamp((t - at + 0.05) / 0.2); if (k <= 0) return; const y = [168, 300, 535][i]; c.globalAlpha = k; c.fillStyle = '#1b2638'; rrect(c, SX0, y, SW, 120, 18); c.fill(); c.fillStyle = '#9fb3c8'; c.font = F(800, 26); c.fillText(a, SX0 + 22, y + 42); c.fillStyle = '#ffffff'; c.font = F(900, 44); c.fillText(b, SX0 + 22, y + 98); c.globalAlpha = 1; }); return; }
+  if (t < topT) { slideBg(c, w, h, '#101826'); const cheap = wAt('B6', 'barata'); const k = clamp((t - copyT) / 0.4); ctext(c, 'IGUALITA', 70, 44, '#ffcf3a');
+    const prod = (x, col, name, price, a) => { c.globalAlpha = a; c.fillStyle = '#1b2638'; rrect(c, x, 100, 190, 600, 22); c.fill(); razorIcon(c, x + 95, 300, 1.05, col); c.fillStyle = '#fff'; c.font = F(800, 26); c.textAlign = 'center'; name.split('\n').forEach((s, i) => c.fillText(s, x + 95, 556 + i * 30)); c.font = F(900, 58); c.fillStyle = price === '$399' ? '#7CFFB2' : '#ffffff'; c.fillText(price, x + 95, 672); c.textAlign = 'left'; c.globalAlpha = 1; };
+    prod(SX0, '#1fa39a', 'FILO Pro', '$899', 1); prod(SX1 - 190, '#2c3a4c', 'amazon\nbásicos', t > cheap ? '$399' : '$899', k); return; }
+  if (t < eu) { slideBg(c, w, h, '#ffffff'); c.fillStyle = '#131921'; c.fillRect(0, 0, w, 90); c.fillStyle = '#fff'; c.font = F(800, 38); c.fillText('amazon', SX0, 58); c.fillStyle = '#c9d2e6'; c.font = F(700, 26); c.fillText('rasuradora', SX0 + 170, 58);
+    const k = sm(topT + 0.1, topT + 0.9, t); const rows = [['amazon básicos', '$399', '#2c3a4c'], ['FILO Pro', '$899', '#1fa39a']];
+    rows.forEach(([n, p, col], i) => { const y = 112 + lerp(i === 0 ? 412 : 0, i === 0 ? 0 : 412, k); c.fillStyle = i === 0 ? '#fff8e6' : '#f4f6fa'; rrect(c, SX0, y, SW, 196, 20); c.fill(); razorIcon(c, SX0 + 60, y + 105, 0.62, col);
+      c.fillStyle = '#111'; c.font = F(800, 28); c.fillText(n, SX0 + 125, y + 52); c.font = F(900, 58); c.fillText(p, SX0 + 125, y + 125); c.fillStyle = i === 0 ? '#ff9900' : '#9aa3ad'; c.font = F(900, 40); c.fillText('#' + (k > 0.5 ? i + 1 : 2 - i), SX0 + 125, y + 178); });
+    return; }
+  // Lucía's 4th-wall fact (laid out top-left: she stands in front of the right half)
+  slideBg(c, w, h, '#0b1a3a'); const L = 70; c.fillStyle = '#ffcf3a'; c.font = F(900, 50); c.fillText('★ UNIÓN EUROPEA', L, 66);
+  const y20 = wAt('L2', '2020'), y22 = wAt('L2', '2022'), eur = wAt('L2', 'europa');
+  if (t > y20 - 0.1) { c.fillStyle = '#ffffff'; c.font = F(900, 52); c.fillText('2020', L, 142); c.font = F(700, 28); c.fillStyle = '#c9d6ee'; c.fillText('acusa a Amazon de usar', L + 150, 122); c.fillText('datos de sus vendedores', L + 150, 156); }
+  if (t > y22 - 0.1) { c.fillStyle = '#ffffff'; c.font = F(900, 52); c.fillText('2022', L, 232); c.font = F(700, 28); c.fillStyle = '#c9d6ee'; c.fillText('Amazon promete no hacerlo', L + 150, 212); c.fillText('(sin multa; Amazon lo negó)', L + 150, 246); }
+  if (t > eur - 0.1) { c.fillStyle = '#ffcf3a'; rrect(c, L - 8, 274, 480, 62, 14); c.fill(); c.fillStyle = '#111'; c.font = F(900, 38); c.fillText('SOLO EN EUROPA', L + 12, 318); }
+}; }
+// factory screens
+function copyAd(c, w, h) { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#232f3e'); g.addColorStop(1, '#131921'); c.fillStyle = g; c.fillRect(0, 0, w, h); razorIcon(c, w * 0.24, h * 0.55, h / 380, '#3a4a5e');
+  c.fillStyle = '#fff'; c.font = F(800, h * 0.11); c.fillText('amazon', w * 0.46, h * 0.3); c.fillStyle = '#ff9900'; c.font = F(800, h * 0.09); c.fillText('básicos', w * 0.46, h * 0.43);
+  c.fillStyle = '#fff'; c.font = F(900, h * 0.2); c.fillText('$399', w * 0.46, h * 0.72); c.fillStyle = '#ff6b6b'; c.font = F(800, h * 0.07); c.fillText('¡OFERTA!', w * 0.46, h * 0.86); }
+const counterDraw = (n) => (c, w, h) => { c.fillStyle = '#0a0d14'; c.fillRect(0, 0, w, h); c.fillStyle = '#9fb3c8'; c.font = F(800, h * 0.2); c.textAlign = 'left'; c.fillText('PEDIDOS HOY', w * 0.04, h * 0.6);
+  c.fillStyle = '#7CFFB2'; c.font = F(900, h * 0.62); c.textAlign = 'right'; c.fillText('+' + n.toLocaleString('en-US'), w * 0.96, h * 0.75); c.textAlign = 'left'; };
+FU.screens.forEach(m => m.userData.draw(copyAd));
+
+// ---------- helpers ----------
+const _v = new THREE.Vector3();
+const headPos = (c) => { c.updateMatrixWorld(true); return c.userData.rig.head.getWorldPosition(new THREE.Vector3()); };
+const worldOf = (o) => { o.updateWorldMatrix(true, false); return o.getWorldPosition(new THREE.Vector3()); };
+function act(c, spk, pose, expr, t, o = {}) { kit.setPose(c, pose, t, o); kit.setExpression(c, expr); if (!o.noBlink) kit.blink(c, t, o.seed || 0); if (spk) kit.setMouthOpen(c, mouthAt(spk, t) * (o.mouth ?? 1)); }
+function lookAt(c, target, k = 1) { c.updateMatrixWorld(true); const R = c.userData.rig; const l = c.worldToLocal(_v.copy(target)); const lh = c.worldToLocal(R.head.getWorldPosition(new THREE.Vector3()));
+  const dx = l.x - lh.x, dy = l.y - lh.y, dz = l.z - lh.z; const yaw = clamp(Math.atan2(dx, dz), -1.25, 1.25) * k; const pitch = clamp(-Math.atan2(dy, Math.hypot(dx, dz)), -0.45, 0.45) * k;
+  R.neck.rotation.y += yaw * 0.45; R.head.rotation.y += yaw * 0.55; R.head.rotation.x += pitch * 0.7; }
+const place = (c, x, z, ry, y = 0) => { c.position.set(x, y, z); c.rotation.set(0, ry, 0); };
+const facing = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
+let shake = 0;
+function cam(p, tg, fov = 45, roll = 0) { const s = shake; camera.position.copy(p).add(V(Math.sin(T * 47) * s, Math.sin(T * 53 + 1) * s, 0)); camera.up.set(0, 1, 0); camera.lookAt(tg); if (roll) camera.rotateZ(roll); camera.fov = fov; camera.updateProjectionMatrix(); }
+let T = 0;
+
+// ---------- shots ----------
+const tS = {
+  celebrate: wAt('T1', '¡Mi') - 0.18, phone: LN.T2.start - 0.3, grin: wAt('T2', 'ya') - 0.12, bed: LN.T3.start - 0.3, window: LN.T3.end + 0.8, hq: LN.T3.end + 1.75,
+  meet: LN.B1.start - 0.4, bezLow: wAt('B1', 'cuales') - 0.12, lucia: LN.L1.start - 0.22, screenL: wAt('L1', '60%') - 0.35, mock: LN.B2.start - 0.25,
+  ramiro: LN.R1.start - 0.25, ramiroC: wAt('R1', 'como') - 0.3, next1: LN.B3.start - 0.22, brandon: LN.BR1.start - 0.22, bald: wAt('BR1', 'que') - 0.1, next2: LN.B4.start - 0.2,
+  kevin: LN.K1.start - 0.28, kphone: wAt('K1', 'maquinaff') - 0.08, idea: LN.B5.start - 0.3, plan: wAt('B6', 'saquen') - 0.3, data: wAt('B6', 'quien') - 0.35, copy: wAt('B6', 'haganla') - 0.2, top: wAt('B6', 'ponganla') - 0.3,
+  luciaCam: LN.L2.start - 0.4, facWide: LN.L2.end + 0.35, facTwo: LN.K2.start - 0.45, torta: LN.B7.start - 0.12,
+  morning: LN.B7.end + 0.45, stretch: LN.T4.start - 0.3, sales: LN.T5.start - 0.3, shock: wAt('T5', 'como') - 0.12, search: LN.T5.end + 0.12, scream: LN.T6.start - 0.4,
+};
+const SHOTS = [['laptop', 0, 'bed'], ['celebrate', tS.celebrate, 'bed'], ['phone', tS.phone, 'bed'], ['grin', tS.grin, 'bed'], ['bed', tS.bed, 'bed'], ['window', tS.window, 'bed', 2], ['hq', tS.hq, 'hq', 2],
+  ['meet', tS.meet, 'meet'], ['bezLow', tS.bezLow, 'meet'], ['lucia', tS.lucia, 'meet'], ['screenL', tS.screenL, 'meet'], ['mock', tS.mock, 'meet'], ['ramiro', tS.ramiro, 'meet'], ['ramiroC', tS.ramiroC, 'meet'],
+  ['next1', tS.next1, 'meet'], ['brandon', tS.brandon, 'meet'], ['bald', tS.bald, 'meet'], ['next2', tS.next2, 'meet'], ['kevin', tS.kevin, 'meet'], ['kphone', tS.kphone, 'meet'], ['idea', tS.idea, 'meet', 2],
+  ['plan', tS.plan, 'meet'], ['data', tS.data, 'meet'], ['copy', tS.copy, 'meet'], ['top', tS.top, 'meet'], ['luciaCam', tS.luciaCam, 'meet'],
+  ['facWide', tS.facWide, 'fac'], ['facTwo', tS.facTwo, 'fac'], ['torta', tS.torta, 'fac'],
+  ['morning', tS.morning, 'bed'], ['stretch', tS.stretch, 'bed'], ['sales', tS.sales, 'bed'], ['shock', tS.shock, 'bed'], ['search', tS.search, 'bed'], ['scream', tS.scream, 'bed', 2], ['end', END + 1, 'bed']]
+  .map(([name, t, sc, sub]) => ({ name, t, sc, sub }));
+const shotIdx = (t) => { let i = 0; while (i + 1 < SHOTS.length && t >= SHOTS[i + 1].t) i++; return i; };
+
+// ---------- bedroom ----------
+const DESK = { x: -1.6, z: -0.65 }; const ROOM = BU.roomCenter; const STAND = BU.standSpot;
+function stateBed(t, sh) {
+  tono.visible = true;
+  const morning = t > 80; const lampOff = LN.T3.end + 0.35;
+  BU.setTime(morning ? sm(tS.morning - 0.2, tS.morning + 1.2, t) : 0); BU.setLamp(morning ? 0 : t < lampOff ? 1 : 0);
+  r.toneMappingExposure = morning ? 1.0 : t < lampOff ? 0.95 : 1.15;
+  phoneT.visible = true; phoneT.userData.glow.intensity = 0.4;
+  if (sh === 'laptop') { BU.laptop.userData.draw(laptopDraw(t)); }
+  else if (!morning && t < 2) BU.laptop.userData.draw(laptopDraw(2));
+  if (sh === 'laptop') { place(tono, DESK.x, DESK.z, -Math.PI / 2, kit.sitY(tono, 0.45)); const up = t > 0.36; act(tono, null, up ? 'handsUp' : 'sit', up ? 'grin' : 'surprised', t, { sit: true }); phoneT.visible = false; lookAt(tono, worldOf(BU.laptop)); BU.setQuilt(0); return; }
+  if (sh === 'celebrate' || sh === 'grin') { place(tono, ROOM.x, ROOM.z, -0.35); act(tono, 'tono', 'celebrate', 'grin', t); phoneT.userData.draw(bankApp); BU.setQuilt(0); return; }
+  if (sh === 'phone') { place(tono, ROOM.x, ROOM.z, -0.35); act(tono, 'tono', 'lookPhone', t < wAt('T2', 'pesos') ? 'surprised' : 'grin', t); phoneT.userData.draw(bankApp); BU.setQuilt(0); return; }
+  if (sh === 'bed' || sh === 'window' || sh === 'morning') {
+    const a = BU.bedAnchor; tono.position.set(a.x, a.y, a.z); tono.rotation.set(-Math.PI / 2, 0, 0); phoneT.visible = false; BU.setQuilt(1);
+    const asleep = morning ? t < tS.morning + 0.55 : t > LN.T3.end + 0.1; act(tono, morning ? null : 'tono', 'sleep', 'happy', t, { noBlink: asleep });
+    if (asleep) for (const g of tono.userData.rig.eyes) g.userData.inner.scale.y = 0.08; return; }
+  // morning, standing by the window
+  BU.setQuilt(0); place(tono, STAND.x, STAND.z, STAND.ry);
+  if (sh === 'stretch') { act(tono, 'tono', 'stretch', 'happy', t); phoneT.visible = false; return; }
+  if (sh === 'sales' || sh === 'shock') { act(tono, 'tono', 'lookPhone', sh === 'shock' ? 'shocked' : t < wAt('T5', 'dos') + 0.2 ? 'happy' : 'surprised', t); phoneT.userData.draw(salesApp(t - tS.sales)); return; }
+  if (sh === 'search') { act(tono, null, 'lookPhone', 'shocked', t); phoneT.userData.draw(searchApp(t)); return; }
+  if (sh === 'scream' || sh === 'end') { const scr = t > LN.T6.start - 0.1; act(tono, 'tono', scr ? 'headHands' : 'lookPhone', scr ? 'angry' : 'shocked', t, { mouth: 1.3 }); phoneT.visible = !scr; return; }
+}
+function camBed(t, sh, a, b) {
+  const u = clamp((t - a) / (b - a));
+  if (sh === 'laptop') { const lp = worldOf(BU.laptop); const n = V(0, 0, 1).applyQuaternion(BU.laptop.getWorldQuaternion(new THREE.Quaternion())); tono.visible = false; cam(lp.clone().addScaledVector(n, 1.05 - 0.15 * u).add(V(0, 0.04, 0)), lp, 32); return; }
+  if (sh === 'celebrate') { const hp = headPos(tono); cam(V(ROOM.x - 0.55 + u * 0.1, 0.95, ROOM.z + 2.2 - u * 0.3), V(hp.x, hp.y - 0.35, hp.z), 50); return; }
+  if (sh === 'phone' || sh === 'sales') { const p = worldOf(phoneT); const e = tono.localToWorld(V(0.78, 1.98, -0.5)); cam(vl(e, p, 0.3 + 0.1 * u), p, 30); return; }
+  if (sh === 'grin' || sh === 'shock') { const hp = headPos(tono); const f = tono.localToWorld(V(0.25, 0, 2.35 - 0.2 * u)); cam(V(f.x, hp.y - 0.25, f.z), V(hp.x, hp.y - 0.12, hp.z), 36); return; }
+  if (sh === 'bed') { const hp = headPos(tono); cam(vl(V(0.85, 2.0, -0.35), V(0.75, 1.85, -0.6), sm(0, 1, u)), V(hp.x - 0.15, hp.y, hp.z), 48); return; }
+  if (sh === 'window') { const k = sm(0, 1, u); const w = BU.window; cam(vl(V(1.2, 1.5, 0.4), V(w.x, w.y, w.z - 0.9), k * k), V(w.x, w.y + 0.05, w.z - 4), lerp(50, 40, k)); return; }
+  if (sh === 'morning') { const hp = headPos(tono); cam(vl(V(0.8, 1.85, -0.75), V(0.7, 1.75, -0.95), u), V(hp.x, hp.y, hp.z), 44); return; }
+  if (sh === 'stretch') { const hp = headPos(tono); const f = tono.localToWorld(V(0.25, 0, 2.6 - 0.3 * u)); cam(V(f.x, 1.25, f.z), V(hp.x, hp.y - 0.35, hp.z), 46); return; }
+  if (sh === 'search') { const p = worldOf(phoneT); const q = phoneT.getWorldQuaternion(new THREE.Quaternion()); const n = V(0, 0, 1).applyQuaternion(q), up = V(0, 1, 0).applyQuaternion(q);
+    camera.position.copy(p).addScaledVector(n, 0.4 - 0.06 * u); camera.up.copy(up); camera.lookAt(p); camera.fov = 36; camera.updateProjectionMatrix(); return; }
+  if (sh === 'scream' || sh === 'end') { const hp = headPos(tono); const k = sm(LN.T6.start + 0.1, END - 0.3, t); const f = tono.localToWorld(V(0.1, 0, 2.3)); shake = 0.03 * win(LN.T6.start, LN.T6.end + 0.3, t, 0.08);
+    cam(vl(V(f.x, hp.y - 0.05, f.z), V(-1.6, 2.6, 2.1), k), vl(hp, V(hp.x, 0.9, hp.z), k * 0.6), lerp(38, 60, k)); shake = 0; return; }
+}
+
+// ---------- HQ fly-in ----------
+function camHQ(t, a, b) { const k = sm(a, b, t); const e = k * k * (3 - 2 * k); const tf = hq.userData.topFloor;
+  cam(vl(V(22, 6, 64), V(tf.x + 0.3, tf.y + 0.2, tf.z + 6.5), e), vl(V(0, 18, 0), V(tf.x, tf.y, tf.z - 2), e), lerp(46, 40, e)); }
+
+// ---------- meeting room ----------
+const SEAT = MU.seats; const BOSS = MU.bossSpot;
+const SIT = [[lucia, SEAT[0]], [ramiro, SEAT[1]], [brandon, SEAT[2]], [kevin, SEAT[3]]];
+const LUCIA_UP = { x: -1.0, z: -2.8 };
+function stateMeet(t, sh) {
+  const frz = sh === 'luciaCam'; const tt = frz ? Math.min(t, LN.L2.start - 0.4) : t; // the room freezes while Lucía talks to camera
+  MU.screen.userData.draw(meetSlide(t));
+  for (const [c, s] of SIT) place(c, s.x, s.z, s.ry, kit.sitY(c, 0.45));
+  // Bezos
+  place(bezos, BOSS.x, BOSS.z, BOSS.ry); let bp = 'lean', be = 'smug';
+  if (tt > LN.L1.start && tt < LN.B2.start) { bp = 'crossed'; be = 'neutral'; }
+  if (tt >= LN.B2.start - 0.2 && tt < wAt('B2', 'siguiente') - 0.1) { bp = tt < wAt('B2', 'tu') ? 'shrug' : 'presenting'; be = 'smug'; }
+  if (tt >= LN.R1.start && tt < LN.B3.start) { bp = 'crossed'; be = 'neutral'; }
+  if (tt >= LN.BR1.start && tt < LN.B4.start) { bp = 'crossed'; be = tt > wAt('BR1', 'calva') ? 'smug' : 'neutral'; }
+  if (tt >= LN.K1.start && tt < LN.B5.start) { bp = 'think'; be = 'neutral'; }
+  if (tt >= LN.B5.start - 0.15 && tt < LN.B5.end + 0.1) { bp = 'handsUp'; be = 'grin'; }
+  if (tt >= LN.B5.end + 0.1) { bp = 'evilRub'; be = 'evil'; }
+  if (tt >= wAt('B6', 'ponganla') && tt < LN.B6.end + 0.2) { bp = 'point'; be = 'evil'; }
+  act(bezos, 'bezos', bp, be, tt, { seed: 1 }); bezos.visible = !['lucia', 'ramiro', 'ramiroC', 'screenL', 'data', 'copy', 'top'].includes(sh);
+  const evil = sm(LN.B5.end, LN.B5.end + 0.6, tt) * (1 - sm(LN.L2.end, LN.L2.end + 0.1, t)); evilL.intensity = 9 * evil * (0.85 + 0.15 * Math.sin(t * 7)); MU.key.intensity = 60 * (1 - 0.45 * evil);
+  // glint on the bald head
+  const g = win(wAt('BR1', 'calva') - 0.05, wAt('BR1', 'calva') + 1.2, t, 0.15); glint.scale.setScalar(0.0001 + 0.32 * g * (0.8 + 0.2 * Math.sin(t * 20))); glint.material.rotation = t * 2;
+  const bh = headPos(bezos);
+  // employees
+  const talk = (c, spk, pose, expr, seed, o = {}) => { act(c, spk, pose, expr, tt, { sit: true, seed, ...o }); };
+  talk(lucia, 'lucia', tt > wAt('L1', '60%') - 0.2 && tt < LN.L1.end ? 'point' : 'sit', 'neutral', 2);
+  talk(ramiro, 'ramiro', tt > LN.R1.start && tt < LN.R1.end ? 'sit' : (Math.sin(tt * 0.7) > 0.6 ? 'eat' : 'sit'), 'sad', 3);
+  talk(brandon, 'brandon', tt > LN.BR1.start - 0.1 && tt < LN.BR1.end + 0.4 ? 'thumbsUp' : 'sit', 'grin', 4);
+  const kshow = tt > LN.K1.start - 0.15 && tt < LN.B6.start; phoneK.visible = kshow; if (kshow) phoneK.userData.draw(listingApp);
+  talk(kevin, 'kevin', kshow ? 'showPhone' : 'eat', 'neutral', 5, { mouth: tt < LN.K1.end + 0.1 ? 0.7 : 1 });
+  if (!kshow) kit.setMouthOpen(kevin, 0.25 + 0.2 * Math.sin(tt * 9)); // chewing
+  // who looks where
+  const speaker = (() => { for (const l of DATA.lines) if (tt >= l.start - 0.2 && tt <= l.end + 0.3) return l.speaker; return 'bezos'; })();
+  const P = { bezos: bh, lucia: headPos(lucia), ramiro: headPos(ramiro), brandon: headPos(brandon), kevin: headPos(kevin) };
+  for (const [c, id] of [[lucia, 'lucia'], [ramiro, 'ramiro'], [brandon, 'brandon'], [kevin, 'kevin']]) lookAt(c, id === speaker ? P.bezos : (P[speaker] || P.bezos), 0.9);
+  if (speaker !== 'bezos' && P[speaker]) lookAt(bezos, P[speaker], 0.7);
+  if (kshow && tt > LN.B5.start - 0.3) lookAt(bezos, worldOf(phoneK), 0.5);
+  // Lucía breaks the 4th wall
+  if (frz) { place(lucia, LUCIA_UP.x, LUCIA_UP.z, 0.12); act(lucia, 'lucia', t > wAt('L2', 'europa') - 0.3 ? 'shrug' : 'idle', 'smug', t, { seed: 2 }); lookAt(lucia, camera.position.clone().setY(1.5), 0.5); }
+}
+function camMeet(t, sh, a, b) {
+  const u = clamp((t - a) / (b - a)); const hp = (c) => headPos(c);
+  if (sh === 'meet') { cam(vl(V(0.35, 1.8, 3.7), V(0.25, 1.7, 3.0), u), V(0, 1.35, -2.0), 52); return; }
+  if (sh === 'bezLow' || sh === 'mock' || sh === 'next1' || sh === 'next2' || sh === 'plan') { const h = hp(bezos);
+    const low = { bezLow: [V(0.3, 1.15, 0.15), 40], mock: [V(-0.35, 1.25, 0.05), 37], next1: [V(0.2, 1.5, 0.05), 33], next2: [V(-0.15, 1.55, 0.25), 29], plan: [V(0.5, 0.95, -0.05), 40] }[sh];
+    cam(vl(low[0], V(h.x, h.y - 0.1, h.z + 1.6), 0.15 * u), V(h.x, h.y - 0.18, h.z), low[1] - 2 * u); return; }
+  if (sh === 'lucia' || sh === 'ramiro' || sh === 'ramiroC' || sh === 'brandon' || sh === 'kevin') { const c = { lucia, ramiro, ramiroC: ramiro, brandon, kevin }[sh]; const h = hp(c); const sx = Math.sign(c.position.x);
+    const close = sh === 'ramiroC'; const far = sh === 'brandon' || sh === 'kevin';
+    const p = far ? V(-sx * 0.75, 1.95 - 0.04 * u, -0.95 + 0.08 * u) : V(sx * 0.3, 2.05 - 0.05 * u, -3.3 + 0.12 * u); // near seats: Bezos' point of view (he is hidden); far seats: across the table
+    cam(p, V(h.x, h.y - (close ? 0.08 : 0.22), h.z), close ? 26 - 2 * u : far ? 42 : 38); return; }
+  if (sh === 'screenL' || sh === 'data' || sh === 'copy' || sh === 'top') { const sp = MU.screenPos;
+    cam(V(0, sp.y + 0.02, -1.45 + 0.12 * u), V(sp.x, sp.y, sp.z), 46); return; }
+  if (sh === 'bald') { const h = hp(bezos); cam(vl(V(0.35, 2.75, -0.25), V(0.25, 2.6, -0.55), u), V(h.x, h.y + 0.15, h.z), 38); return; }
+  if (sh === 'kphone') { const p = worldOf(phoneK); const q = phoneK.getWorldQuaternion(new THREE.Quaternion()); const n = V(0, 0, 1).applyQuaternion(q), up = V(0, 1, 0).applyQuaternion(q);
+    camera.position.copy(p).addScaledVector(n, 0.42 - 0.05 * u).add(V(0, 0.02, 0)); camera.up.copy(up); camera.lookAt(p); camera.fov = 36; camera.updateProjectionMatrix(); return; }
+  if (sh === 'idea') { const h = hp(bezos); const k = sm(0, 0.55, u); cam(vl(V(0.1, 1.5, 0.9), V(0.04, h.y - 0.1, h.z + 2.1), k), V(h.x, h.y - 0.15, h.z), lerp(46, 34, k)); return; }
+  if (sh === 'luciaCam') { cam(V(-0.85, 1.5, -0.2 + 0.15 * (1 - u)), V(-0.85, 1.72, -3.77), 50); return; }
+}
+
+// ---------- factory ----------
+function stateFac(t, sh) {
+  FU.update(t); FU.counter.userData.draw(counterDraw(7214 + Math.floor(Math.max(0, t - tS.facWide) * 143)));
+  place(kevinF, -0.5, 3.4, 1.15); place(bezosF, 0.5, 3.4, -1.15);
+  const give = wAt('B7', 'torta') + 0.45; const given = t > give;
+  tortaB.visible = !given; tortaKF.visible = given;
+  act(kevinF, 'kevin', given ? 'eat' : t > LN.K2.start - 0.1 && t < LN.K2.end + 0.3 ? 'shrug' : 'idle', given ? 'happy' : 'neutral', t, { seed: 5 });
+  if (given) kit.setMouthOpen(kevinF, 0.25 + 0.2 * Math.sin(t * 9));
+  act(bezosF, 'bezos', given ? 'laugh' : t > LN.B7.start - 0.25 ? 'handshake' : 'handsBehind', given ? 'grin' : 'smug', t, { seed: 1, mouth: given ? 1.2 : 1 });
+  if (!given) { lookAt(bezosF, headPos(kevinF), 0.8); lookAt(kevinF, headPos(bezosF), 0.8); } else lookAt(kevinF, worldOf(tortaKF), 0.6);
+}
+function camFac(t, sh, a, b) { const u = clamp((t - a) / (b - a));
+  if (sh === 'facWide') { cam(vl(V(7.5, 5.4, 13.5), V(4.5, 3.8, 10), sm(0, 1, u)), V(0, 3.0, -4), 52); return; }
+  if (sh === 'facTwo') { cam(vl(V(1.7, 1.6, 6.6), V(1.55, 1.55, 6.2), u), V(-0.15, 1.35, 3.4), 42); return; }
+  if (sh === 'torta') { cam(vl(V(-1.6, 1.5, 6.3), V(-1.45, 1.5, 5.95), u), V(0.15, 1.25, 3.4), 42); return; }
+}
+
+// ---------- overlay ----------
+const CX = W / 2 - 40;
+const SPK = { tono: '#ff9f5a', bezos: '#ffd84a', lucia: '#ff8fb1', ramiro: '#b9e07a', brandon: '#7fc8ff', kevin: '#ff7a7a' };
+const groups = []; { let cur = []; for (const w of words) { if (cur.length && (cur.length >= 4 || cur[0].line !== w.line || /[.,?!:…]$/.test(cur.at(-1).text))) { groups.push(cur); cur = []; } cur.push(w); } if (cur.length) groups.push(cur); }
+function drawCaption(t) {
+  let g = null; for (let i = 0; i < groups.length; i++) { const s = groups[i][0].start, e = Math.min(i + 1 < groups.length ? groups[i + 1][0].start : 1e9, groups[i].at(-1).end + 0.5); if (t >= s - 0.05 && t < e) { g = groups[i]; break; } }
+  if (!g) return; const size = 68; const col = SPK[g[0].speaker] || '#fff'; out.save(); out.font = `900 ${size}px Inter`; out.textBaseline = 'middle';
+  const toks = g.map(w => w.text.toUpperCase().replace(/\.\.\.$/, '…')); const sp = size * 0.28; const ws = toks.map(s => out.measureText(s).width);
+  const lines = [[]]; let lw = 0; toks.forEach((s, i) => { if (lw + ws[i] > 820 && lines.at(-1).length) { lines.push([]); lw = 0; } lines.at(-1).push(i); lw += ws[i] + sp; });
+  const y0 = 1250 - (lines.length - 1) * size * 0.55; const pop = 1 + 0.05 * Math.max(0, 1 - (t - g[0].start) / 0.12);
+  lines.forEach((ln, li) => { const tot = ln.reduce((a, i) => a + ws[i], 0) + sp * (ln.length - 1); let x = CX - tot / 2; const y = y0 + li * size * 1.1;
+    for (const i of ln) { const w = g[i]; const active = t >= w.start - 0.03; out.save(); out.translate(x + ws[i] / 2, y); out.scale(pop, pop); out.lineJoin = 'round'; out.lineWidth = size * 0.2; out.strokeStyle = '#000'; out.strokeText(toks[i], -ws[i] / 2, 0);
+      out.fillStyle = active ? col : 'rgba(255,255,255,0.5)'; out.fillText(toks[i], -ws[i] / 2, 0); out.restore(); x += ws[i] + sp; } });
+  out.restore();
+}
+
+// ---------- frame ----------
+function renderScene(t) {
+  T = t; const i = shotIdx(t); const s = SHOTS[i]; const a = s.t, b = SHOTS[i + 1] ? SHOTS[i + 1].t : END;
+  if (s.sc === 'bed') { stateBed(t, s.name); camBed(t, s.name, a, b); r.render(S.bed, camera); }
+  else if (s.sc === 'hq') { r.toneMappingExposure = 1.0; camHQ(t, a, b); r.render(S.hq, camera); }
+  else if (s.sc === 'meet') { r.toneMappingExposure = 0.95; if (s.name === 'luciaCam') camMeet(t, s.name, a, b); stateMeet(t, s.name); camMeet(t, s.name, a, b); r.render(S.meet, camera); }
+  else { r.toneMappingExposure = 0.95; stateFac(t, s.name); camFac(t, s.name, a, b); r.render(S.fac, camera); }
+}
+window.renderAt = (t) => {
+  const i = shotIdx(t); const SUB = Math.min(SUBMAX, SHOTS[i].sub || 1); const shutter = 0.5 / 30;
+  for (let k = 0; k < SUB; k++) { const ts = t - shutter / 2 + shutter * (SUB === 1 ? 0.5 : k / (SUB - 1)); renderScene(Math.max(0, Math.min(ts, END))); out.globalAlpha = 1 / (k + 1); out.drawImage(r.domElement, 0, 0); }
+  out.globalAlpha = 1;
+  const vg = out.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.4)'); out.fillStyle = vg; out.fillRect(0, 0, W, H);
+  const fade = Math.max(1 - sm(0, 0.3, t), sm(END - 0.6, END, t), win(tS.hq - 0.12, tS.hq + 0.12, t, 0.12) * 0.0); if (fade > 0) { out.fillStyle = `rgba(0,0,0,${fade})`; out.fillRect(0, 0, W, H); }
+  drawCaption(t);
+  return true;
+};
+window.DBG = { THREE, kit, tono, bezos, lucia, ramiro, brandon, kevin, bezosF, kevinF, phoneT, phoneK, camera, LN, wAt, tS, SHOTS, MU, BU, FU };
+window.READY = true;
+</script></body></html>

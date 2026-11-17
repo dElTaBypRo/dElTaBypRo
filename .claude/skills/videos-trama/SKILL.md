@@ -31,6 +31,9 @@ description: Cómo hacer los videos verticales (Reels/TikTok) de este repo con p
 - Expresiones incluye `evil` (plan malévolo). Pose animada `evilRub` = frotarse las manos rápido como mosca; sirve para cualquier personaje: `kit.setPose(c, 'evilRub', t); kit.setExpression(c, 'evil')`. Vista previa: `scenes/anim.html`.
 - **Objetos en la mano:** pegarlos a `rig.wristR/L` con gesto `grab` y orientar el objeto con la palma; nunca dejarlos flotando cerca de la mano.
 - **Evitar que los personajes atraviesen objetos** (autos, puertas, mesas): animar la salida del auto por el hueco de la puerta abierta (de adentro hacia afuera, perpendicular al auto) y revisar en cuadros de prueba que nada se encime.
+- Objetos en mano: `kit.hold(c, 'R', obj, { at, rot, scale: 1.7 })` (se pega a la palma). Celular: `rot: [0, 0, Math.PI]`. Diálogo: `kit.setMouthOpen(c, env)` con la envolvente de la voz y `kit.blink(c, t, semilla)`.
+- **Encuadres en vertical:** las cabezas miden ~0.66 de ancho, así que el cuadro se llena rápido. Primer plano ≈ cámara a 2.4 m con fov 36; plano medio ≈ 2.4 m con fov 50. Si la cámara queda dentro o pegada a otro personaje, ocultarlo (plano subjetivo) o cambiar de lado.
+- **Pantallas 16:9 dentro de la escena:** en un plano vertical cerrado solo se ve el tercio central, así que el contenido va en una columna centrada y fuera de la franja de subtítulos.
 
 ## Contenido
 - Personas reales solo como **caricatura/parodia**, con hechos verificados en al menos 2 fuentes; lo no confirmado se dice como "según reportes".
@@ -39,9 +42,9 @@ description: Cómo hacer los videos verticales (Reels/TikTok) de este repo con p
 
 ## Flujo técnico
 1. Guion + elenco → aprobación del usuario.
-2. Generar voces (una por personaje), separar frases, armar la línea de tiempo del diálogo (`tools/assemble_*.py`), transcribir para tiempos por palabra (`scenes/words_<video>.json`).
+2. Generar voces: una generación por personaje con sus frases separadas por `[long pause]`, sin repetir llamadas (cada una cobra). Transcribir cada toma con scribe para tener los tiempos por palabra, y luego `tools/assemble_<video>.py` acomoda las frases en la línea de tiempo, genera `scenes/vo_<video>.wav` y `scenes/words_<video>.json` (líneas, palabras y envolvente de boca por personaje).
 3. Página de escenas `scenes/<video>.html` con los kits (`charkit`, `propkit`, `citykit`); `?ui=min` debe ser el comportamiento por defecto en videos nuevos.
 4. Cuadros de prueba: `TIMES=... PAGE=<video>.html node tools/render.js prueba test 4` + hoja de contacto; corregir encuadres, choques y objetos tapando.
-5. Render completo en segundo plano con timeout largo (2 h) y el servidor (`npm run serve`) también con timeout largo; si se corta, retomar con `SKIP_EXISTING=1`.
+5. Render completo en segundo plano con timeout largo (2 h), con el servidor levantado en el mismo comando: `DUR=<seg> PAGE=<video>.html tools/serve_and.sh node tools/render.js <carpeta> full 4`. Si se corta, retomar con `SKIP_EXISTING=1`.
 6. Efectos: script `tools/sfx_<video>.py` que genera la pista y la tabla; mezcla voces+efectos sin música.
 7. Subir al repo: escena, voces, tiempos, scripts, tabla de efectos y video de ejemplo ligero (`examples/videos/`).
