@@ -136,11 +136,12 @@ def main():
                 if w['speaker'] != spk: continue
                 m = (tt >= w['start']) & (tt < w['end']); v[m] = 0.45 + 0.4 * np.abs(np.sin((tt[m] - w['start']) * np.pi * 6))
         v = np.convolve(v, [0.25, 0.5, 0.25], 'same'); env[spk] = [round(float(x), 2) for x in v]
-    mix = sum(tracks.values()); pk = np.abs(mix).max(); mix = mix / pk * 0.89 if pk > 0.89 else mix
-    wav = os.path.join(ROOT, 'scenes', 'vo_slim.wav')
-    with wave.open(wav, 'wb') as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((mix * 32767).astype(np.int16).tobytes())
-    subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', wav, '-b:a', '160k', os.path.join(ROOT, 'scenes', 'vo_slim.mp3')], check=True)
+    if real:  # placeholder mode has no audio to write
+        mix = sum(tracks.values()); pk = np.abs(mix).max(); mix = mix / pk * 0.89 if pk > 0.89 else mix
+        wav = os.path.join(ROOT, 'scenes', 'vo_slim.wav')
+        with wave.open(wav, 'wb') as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((mix * 32767).astype(np.int16).tobytes())
+        subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', wav, '-b:a', '160k', os.path.join(ROOT, 'scenes', 'vo_slim.mp3')], check=True)
     json.dump({'end': END, 'fps': FPS, 'placeholder': not real, 'lines': out_lines, 'words': out_words, 'mouth': env},
               open(os.path.join(ROOT, 'scenes', 'words_slim.json'), 'w'), ensure_ascii=False)
     print('mode:', 'REAL' if real else 'PLACEHOLDER', ' end:', END)
