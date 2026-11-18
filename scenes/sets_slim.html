@@ -1,0 +1,63 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas>
+<script type="module">
+// Set preview for the Slim / Telmex video: renderAt(i) shows view floor(i).
+// 0 living room · 1 auction hall 1990 · 2 OECD chart office · 3 money mountain · 4 regulator office 2014 · 5 office doorway (peek spot)
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createProps } from '../kit/propkit.js';
+import { createSlimSets } from '../kit/slimsets.js';
+const W = 1080, H = 1920;
+const kit = createKit(THREE, RoundedBoxGeometry); const props = createProps(THREE, kit, 'clay'); const sets = createSlimSets(THREE, kit, props);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.95;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+await document.fonts.load('900 90px Inter'); await document.fonts.load('800 90px Inter');
+const env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture;
+const mk = (bg) => { const s = new THREE.Scene(); s.environment = env; s.background = new THREE.Color(bg); return s; };
+const S = [mk(0x1a120c), mk(0x1a120c), mk(0x1a1d22), mk(0x0a0620), mk(0x1a1d22)];
+const room = sets.livingRoom(), hall = sets.auction1990(), office = sets.chartOffice(), mount = sets.moneyMountain(), reg = sets.regulatorOffice();
+[room, hall, office, mount, reg].forEach((g, i) => S[i].add(g));
+const C = (id, i) => { const c = kit.build(kit.PRESETS[id], 'clay'); S[i].add(c); sets.setEnvIntensity(c, [room, hall, office, mount, reg][i].userData.envIntensity); return c; };
+const place = (c, s, y = 0) => { c.position.set(s.x, y, s.z); c.rotation.set(0, s.ry, 0); };
+// ---- placeholder screen content ----
+const F = (w, px) => `${w} ${Math.round(px)}px Inter`;
+hall.userData.screen.userData.draw((c, w, h) => { c.fillStyle = '#f2e6c8'; c.fillRect(0, 0, w, h); c.fillStyle = '#7a1f1f'; c.fillRect(0, h * 0.72, w, h * 0.28); c.fillStyle = '#2a1d14'; c.textAlign = 'center'; c.font = F(900, h * 0.3); c.fillText('TELMEX', w / 2, h * 0.45); c.fillStyle = '#f2e6c8'; c.font = F(900, h * 0.16); c.fillText('SE VENDE', w / 2, h * 0.92); });
+office.userData.screen.userData.draw((c, w, h) => { c.fillStyle = '#0f1724'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = F(900, h * 0.08); c.fillText('OCDE 2012', w / 2, h * 0.12);
+  for (const [cx, pct, lab] of [[w * 0.38, 0.8, 'FIJOS'], [w * 0.62, 0.7, 'CELULARES']]) { const R = h * 0.2; c.fillStyle = '#2a3a52'; c.beginPath(); c.arc(cx, h * 0.42, R, 0, 7); c.fill(); c.fillStyle = '#1e88e5'; c.beginPath(); c.moveTo(cx, h * 0.42); c.arc(cx, h * 0.42, R, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.font = F(900, h * 0.07); c.fillText(Math.round(pct * 100) + '%', cx, h * 0.45); c.font = F(800, h * 0.05); c.fillText(lab, cx, h * 0.7); }
+  c.fillStyle = '#ff6b6b'; c.font = F(900, h * 0.1); c.fillText('$129,000 MILLONES', w / 2, h * 0.88); c.textAlign = 'left'; });
+reg.userData.doc.draw((c, w, h) => { c.fillStyle = '#fbf8ef'; c.fillRect(0, 0, w, h); c.fillStyle = '#333'; c.textAlign = 'center'; c.font = F(800, 30); c.fillText('RESOLUCIÓN', w / 2, 70); c.fillStyle = '#999'; for (let i = 0; i < 9; i++) c.fillRect(50, 110 + i * 26, w - 100, 8);
+  c.save(); c.translate(w / 2, h * 0.7); c.rotate(-0.15); c.strokeStyle = '#c0392b'; c.lineWidth = 8; c.strokeRect(-190, -60, 380, 120); c.fillStyle = '#c0392b'; c.font = F(900, 40); c.fillText('AGENTE', 0, -8); c.fillText('PREPONDERANTE', 0, 40); c.restore(); });
+// ---- scale-check characters ----
+const abuelo = C('asalariado', 0), nieto = C('becario', 0);
+const salinas = C('banquero', 1), slim1 = C('rico', 1), p1 = C('gordo', 1), p2 = C('jensen', 1), o1 = C('asalariado', 1), o2 = C('becario', 1);
+const ocde = C('lucia', 2), slim2 = C('rico', 2), o3 = C('asalariado', 2), o4 = C('becario', 2);
+const slim3 = C('rico', 3), o5 = C('asalariado', 3), o6 = C('becario', 3);
+const regu = C('lucia', 4), slim4 = C('rico', 4), o7 = C('asalariado', 4), o8 = C('becario', 4);
+const cam = new THREE.PerspectiveCamera(48, W / H, 0.05, 300);
+const look = (p, t, fov) => { cam.position.set(...p); cam.lookAt(...t); cam.fov = fov; cam.updateProjectionMatrix(); };
+window.renderAt = (t) => {
+  const i = Math.floor(t + 1e-6); const T = 2 + (t - i);
+  if (i === 0) { const ud = room.userData; place(abuelo, ud.sofaSeats[0], kit.sitY(abuelo, ud.seatY)); place(nieto, ud.sofaSeats[1], kit.sitY(nieto, ud.seatY));
+    kit.setPose(abuelo, 'sit', T); kit.setExpression(abuelo, 'happy'); kit.setPose(nieto, 'lookPhone', T, { sit: true }); kit.setExpression(nieto, 'surprised'); look([0.3, 1.55, 3.6], [0, 1.0, -1.2], 48); }
+  if (i === 1) { const ud = hall.userData; place(salinas, ud.podium, ud.podium.y); kit.setPose(salinas, 'podium', T); kit.setExpression(salinas, 'smug');
+    for (const [c, s] of [[slim1, ud.bidderSeat], [p1, ud.partnerSeats[0]], [p2, ud.partnerSeats[1]]]) { place(c, s, kit.sitY(c, ud.seatY)); kit.setPose(c, 'sit', T); }
+    place(o1, ud.observerSpots[0]); place(o2, ud.observerSpots[1]); kit.setPose(o1, 'crossed', T); kit.setPose(o2, 'idle', T); look([1.2, 2.3, 5.2], [0, 1.5, -2.6], 50); }
+  if (i === 2) { const ud = office.userData; place(ocde, ud.presenterSpot); kit.setPose(ocde, 'presenting', T); kit.setExpression(ocde, 'neutral');
+    place(slim2, ud.peekSpot); kit.setPose(slim2, 'idle', T); kit.setExpression(slim2, 'angry'); place(o3, ud.observerSpots[0]); place(o4, ud.observerSpots[1]); kit.setPose(o3, 'think', T); kit.setPose(o4, 'idle', T); look([1.3, 1.75, 3.4], [-1.0, 1.5, -2.2], 52); }
+  if (i === 3) { const ud = mount.userData; slim3.position.set(ud.summit.x, ud.summit.y, ud.summit.z); slim3.rotation.set(0, 0.15, 0); kit.setPose(slim3, 'handsUp', T); kit.setExpression(slim3, 'grin');
+    place(o5, ud.observerSpots[0]); place(o6, ud.observerSpots[1]); kit.setPose(o5, 'idle', T); kit.setPose(o6, 'idle', T); look([0.6, 0.9, 7.6], [0, 2.6, 0], 50); }
+  if (i === 4) { const ud = reg.userData; place(regu, ud.deskSpot); kit.setPose(regu, 'point', T); kit.setExpression(regu, 'neutral'); place(slim4, ud.visitorSpot); kit.setPose(slim4, 'crossed', T); kit.setExpression(slim4, 'smug');
+    place(o7, ud.observerSpots[0]); place(o8, ud.observerSpots[1]); kit.setPose(o7, 'idle', T); kit.setPose(o8, 'idle', T); look([2.1, 1.75, 1.4], [-0.1, 1.15, -1.45], 50); }
+  if (i === 5) { const ud = office.userData; place(slim2, ud.peekSpot); kit.setPose(slim2, 'idle', T); kit.setExpression(slim2, 'angry'); look([1.4, 1.7, 2.4], [-2.6, 1.4, -1.1], 46); }
+  r.render(S[i === 5 ? 2 : Math.min(i, 4)], cam); return true;
+};
+window.DBG = { THREE, kit, room, hall, office, mount, reg, cam };
+window.READY = true;
+</script></body></html>
