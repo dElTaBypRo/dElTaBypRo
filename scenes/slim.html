@@ -129,9 +129,10 @@ const SHOTS = [['open', 0, 'living'], ['recibo', tS.recibo, 'living'], ['n2', tS
 const shotIdx = (t) => { let i = 0; while (i + 1 < SHOTS.length && t >= SHOTS[i + 1].t) i++; return i; };
 
 // ---------- observers (grandpa + grandson in a corner of each past scene) ----------
+const OBS_RY = { money: 0.35 }; // override: face the camera side instead of the mountain
 function observers(sc, t, frozen) {
   const o = U[sc].observerSpot || { x: 2, z: 1, ry: -0.8 }; const ab = AB[sc], ni = NI[sc];
-  const ry = o.ry ?? 0; const dx = Math.cos(ry) * 0.42, dz = -Math.sin(ry) * 0.42;
+  const ry = OBS_RY[sc] ?? o.ry ?? 0; const dx = Math.cos(ry) * 0.42, dz = -Math.sin(ry) * 0.42;
   place(ab, o.x - dx, o.z - dz, ry); place(ni, o.x + dx, o.z + dz, ry);
   const spk = speakerAt(t);
   act(ab, 'abuelo', spk === 'abuelo' ? 'shrug' : 'handsBehind', spk === 'abuelo' ? 'smug' : 'neutral', t, { seed: 6 });
@@ -158,23 +159,23 @@ function stateLiving(t, sh) {
   phoneN.userData.draw(nietoPhone(t > tS.phoneSig ? clamp((t - tS.phoneSig) / 0.3) : 0));
   if (spk === 'abuelo') lookAt(ni, headPos(ab), 0.9); else if (sh !== 'stare') lookAt(ni, ap === 'showPhone' ? worldOf(receipt) : headPos(ab), 0.6);
   if (spk === 'nieto') lookAt(ab, headPos(ni), 0.8); else if (phoneA.visible) lookAt(ab, worldOf(phoneA), 0.6);
-  if (sh === 'stare') lookAt(ni, camera.position, 0.9);
+  if (sh === 'stare') { const cp = ni.localToWorld(V(-0.35, 0, 2.3)); cp.y = headPos(ni).y - 0.1; lookAt(ni, cp, 0.95); }
 }
 function camLiving(t, sh, a, b) { const u = clamp((t - a) / (b - a)); const ab = AB.living, ni = NI.living;
   const mid = vl(headPos(ab), headPos(ni), 0.5);
-  if (sh === 'open' || sh === 'home') { cam(V(mid.x + 0.25, mid.y - 0.15, mid.z + 3.3 - 0.3 * u), V(mid.x, mid.y - 0.45, mid.z), 46); return; }
-  if (sh === 'recibo') { insert(receipt, 0.42 - 0.04 * u, 34); return; }
+  if (sh === 'open' || sh === 'home') { cam(V(mid.x + 0.3, mid.y - 0.05, mid.z + 4.1 - 0.35 * u), V(mid.x, mid.y - 0.55, mid.z), 48); return; }
+  if (sh === 'recibo') { insert(receipt, 0.62 - 0.05 * u, 34); return; }
   if (sh === 'n2' || sh === 'n3' || sh === 'n11' || sh === 'stare') { camFront(ni, 2.35 - 0.15 * u, 36, -0.1, -0.35); return; }
   if (sh === 'a2' || sh === 'final') { camFront(ab, 2.35 - 0.15 * u, 36, -0.1, 0.35); return; }
-  if (sh === 'forbes') { insert(phoneA, 0.4 - 0.04 * u, 34); return; }
-  if (sh === 'phoneSig') { insert(phoneN, 0.36 - 0.03 * u, 34); return; }
+  if (sh === 'forbes') { insert(phoneA, 0.56 - 0.04 * u, 34); return; }
+  if (sh === 'phoneSig') { insert(phoneN, 0.52 - 0.03 * u, 34); return; }
 }
 
 // ---------- 1990 auction (sepia in post) ----------
 function stateAuction(t, sh) {
   const A = U.auction; const pod = A.podium || { x: 0, z: -2.5, ry: 0 }; const seat = A.bidderSeat || { x: 0, z: 0, ry: Math.PI, seatY: 0.45 };
-  placeAt(salinas, pod); const dealing = t > tS.deal - 0.05;
-  if (dealing) place(slim90, pod.x + 0.85, pod.z + 0.55, -1.2); else placeAt(slim90, seat, 0, 0, kit.sitY(slim90, seat.seatY ?? 0.45));
+  placeAt(salinas, pod, 0, 0, pod.y ?? 0); if (A.gavel) A.gavel.visible = false; const dealing = t > tS.deal - 0.05;
+  if (dealing) place(slim90, pod.x + 0.85, pod.z + 0.75, -1.2, pod.y ?? 0); else placeAt(slim90, seat, 0, 0, kit.sitY(slim90, seat.seatY ?? 0.45));
   const bang = (k) => Math.max(0, 1 - Math.abs(t - k) / 0.12);
   act(salinas, 'salinas', dealing ? 'handshake' : t < LN.S2.start - 0.2 ? 'podium' : 'presenting', t > LN.S2.start - 0.2 ? 'smug' : 'grin', t, { seed: 4 });
   const R = salinas.userData.rig; R.shoulderR.rotation.x -= 0.6 * Math.max(bang(LN.S1.start), bang(LN.C2.start), bang(LN.C2.start + 0.28), bang(LN.C2.start + 0.56));
@@ -199,19 +200,19 @@ function camAuction(t, sh, a, b) { const u = clamp((t - a) / (b - a)); const A =
   if (sh === 'salinas' || sh === 'pilon') { const h = headPos(salinas); const f = salinas.localToWorld(V(sh === 'pilon' ? -0.4 : 0.35, 0, 2.4 - 0.2 * u)); cam(V(f.x, h.y - (sh === 'pilon' ? 0.15 : 0.5), f.z), V(h.x, h.y - 0.15, h.z), sh === 'pilon' ? 34 : 38); return; }
   if (sh === 'bid') { camFront(slim90, 2.6 - 0.2 * u, 44, 0.05, 0.4, -0.2); return; }
   if (sh === 'obs1') { const h = vl(headPos(AB.auction), headPos(NI.auction), 0.5); const o = A.observerSpot || { ry: 0 }; const f = V(h.x + Math.sin(o.ry ?? 0) * 3.0, h.y - 0.2, h.z + Math.cos(o.ry ?? 0) * 3.0); cam(f, V(h.x, h.y - 0.35, h.z), 44); return; }
-  if (sh === 'deal') { const m = vl(headPos(salinas), headPos(slim90), 0.5); cam(V(m.x + 0.4, m.y - 0.2, m.z + 3.0 - 0.2 * u), V(m.x, m.y - 0.45, m.z), 46); return; }
+  if (sh === 'deal') { const m = vl(headPos(salinas), headPos(slim90), 0.5); cam(V(m.x + 0.1, m.y - 0.25, m.z + 3.6 - 0.25 * u), V(m.x, m.y - 0.5, m.z), 46); return; }
 }
 
 // ---------- 2012 OECD office ----------
-function chartScreen(t) { return (c, w, h) => { c.fillStyle = '#f4f6fa'; c.fillRect(0, 0, w, h); const cx0 = w * 0.5; c.textAlign = 'center';
-  if (t < tS.ocde) { c.fillStyle = '#111'; c.font = F(900, h * 0.075); c.fillText('MÉXICO · TELEFONÍA 2012', cx0, h * 0.11);
-    const pie = (x, y, rad, pct, label, at) => { const k = clamp((t - at) / 0.6); c.fillStyle = '#d9dee6'; c.beginPath(); c.arc(x, y, rad, 0, 7); c.fill(); c.fillStyle = '#1f4fa8'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, rad, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct * k); c.closePath(); c.fill();
-      c.fillStyle = '#111'; c.font = F(900, h * 0.12); c.fillText(Math.round(pct * 100 * k) + '%', x, y + rad + h * 0.15); c.font = F(800, h * 0.055); c.fillText(label, x, y + rad + h * 0.23); };
-    pie(w * 0.39, h * 0.4, h * 0.2, 0.8, 'teléfonos fijos', wAt('A3', '80%') - 0.2); pie(w * 0.61, h * 0.4, h * 0.2, 0.7, 'celulares', wAt('A3', '70%') - 0.2); c.textAlign = 'left'; return; }
-  c.fillStyle = '#0e2a5a'; c.fillRect(0, 0, w, h); c.fillStyle = '#9fc0ff'; c.font = F(800, h * 0.07); c.fillText('OCDE · REPORTE 2012', cx0, h * 0.13); c.fillStyle = '#fff'; c.font = F(800, h * 0.06); c.fillText('Lo que pagaron de más los mexicanos', cx0, h * 0.23);
+function chartScreen(t) { return (c, w, h) => { const cx0 = w * 0.5; c.textAlign = 'center';  // close shots only see x ≈ 0.35..0.65 of the screen
+  if (t < tS.ocde) { c.fillStyle = '#f4f6fa'; c.fillRect(0, 0, w, h); c.fillStyle = '#111'; c.font = F(900, h * 0.065); c.fillText('TELEFONÍA', cx0, h * 0.1); c.font = F(800, h * 0.045); c.fillStyle = '#5a6475'; c.fillText('MÉXICO 2012', cx0, h * 0.16);
+    const pie = (y, pct, label, at) => { const k = clamp((t - at) / 0.6); const x = w * 0.43, rad = h * 0.12; c.fillStyle = '#d9dee6'; c.beginPath(); c.arc(x, y, rad, 0, 7); c.fill(); c.fillStyle = '#1f4fa8'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, rad, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct * k); c.closePath(); c.fill();
+      c.textAlign = 'left'; c.fillStyle = '#111'; c.font = F(900, h * 0.09); c.fillText(Math.round(pct * 100 * k) + '%', w * 0.5, y + h * 0.01); c.font = F(800, h * 0.04); c.fillStyle = '#5a6475'; c.fillText(label, w * 0.5, y + h * 0.065); c.textAlign = 'center'; };
+    pie(h * 0.37, 0.8, 'teléfonos fijos', wAt('A3', '80%') - 0.2); pie(h * 0.85, 0.7, 'celulares', wAt('A3', '70%') - 0.2); c.textAlign = 'left'; return; }
+  c.fillStyle = '#0e2a5a'; c.fillRect(0, 0, w, h); c.fillStyle = '#9fc0ff'; c.font = F(800, h * 0.05); c.fillText('OCDE · REPORTE 2012', cx0, h * 0.12); c.fillStyle = '#fff'; c.font = F(800, h * 0.04); c.fillText('lo que pagaron de más', cx0, h * 0.2); c.fillText('los mexicanos', cx0, h * 0.25);
   const k = clamp((t - wAt('O1', '129') + 0.1) / 1.2); const n = Math.round(129 * (1 - Math.pow(1 - k, 3)));
-  c.fillStyle = '#7CFFB2'; c.font = F(900, h * 0.2); c.fillText('$' + n + ' mil', cx0, h * 0.5); c.font = F(900, h * 0.08); c.fillText('millones de dólares', cx0, h * 0.62);
-  c.fillStyle = '#fff'; c.font = F(800, h * 0.06); c.fillText('2005 – 2009 · 1.8% del PIB cada año', cx0, h * 0.75); if (t > LN.C3.start - 0.1) { c.fillStyle = '#ffcf3a'; c.font = F(700, h * 0.045); c.fillText('América Móvil rechazó el reporte', cx0, h * 0.86); } c.textAlign = 'left'; }; }
+  c.fillStyle = '#7CFFB2'; c.font = F(900, h * 0.17); c.fillText('$' + n, cx0, h * 0.44); c.font = F(900, h * 0.055); c.fillText('MIL MILLONES', cx0, h * 0.515); c.fillText('DE DÓLARES', cx0, h * 0.575);
+  c.fillStyle = '#fff'; c.font = F(800, h * 0.042); c.fillText('2005 – 2009', cx0, h * 0.77); c.fillText('1.8% del PIB cada año', cx0, h * 0.82); if (t > LN.C3.start - 0.1) { c.fillStyle = '#ffcf3a'; c.font = F(700, h * 0.034); c.fillText('América Móvil rechazó', cx0, h * 0.89); c.fillText('el reporte', cx0, h * 0.93); } c.textAlign = 'left'; }; }
 function stateChart(t, sh) { const C = U.chart; const ps = C.presenterSpot || { x: -1.2, z: -1.6, ry: 0.3 }; placeAt(ocde, ps);
   act(ocde, 'ocde', t > LN.O1.start - 0.2 ? 'presenting' : 'idle', 'neutral', t, { seed: 5 });
   const pk = C.peekSpot || { x: 2.2, z: -0.5, ry: -1.2 }; const peekK = sm(LN.C3.start - 0.5, LN.C3.start - 0.1, t); slimC.visible = peekK > 0;
@@ -233,25 +234,27 @@ function stateMoney(t, sh) { const M = U.money; const s = M.summit || { x: 0, y:
 function camMoney(t, sh, a, b) { const u = clamp((t - a) / (b - a)); const h = headPos(slimM);
   if (sh === 'mWide') { cam(vl(V(h.x + 2.5, 1.2, h.z + 8.5), V(h.x + 1.8, 1.4, h.z + 7.2), sm(0, 1, u)), V(h.x, h.y - 1.3, h.z), 50); return; }
   if (sh === 'summit') { const f = slimM.localToWorld(V(0.35, 0, 2.4 - 0.2 * u)); cam(V(f.x, h.y - 0.75, f.z), V(h.x, h.y - 0.05, h.z), 40); return; }
-  if (sh === 'obs2') { const m = vl(headPos(AB.money), headPos(NI.money), 0.5); const o = U.money.observerSpot || { ry: 0 }; cam(V(m.x + Math.sin(o.ry ?? 0) * 3.0, m.y - 0.25, m.z + Math.cos(o.ry ?? 0) * 3.0), V(m.x, m.y - 0.35, m.z), 44); return; }
+  if (sh === 'obs2') { const m = vl(headPos(AB.money), headPos(NI.money), 0.5); const ry = OBS_RY.money; cam(V(m.x + Math.sin(ry) * 3.1, m.y - 0.25, m.z + Math.cos(ry) * 3.1), V(m.x, m.y - 0.35, m.z), 44); return; }
 }
 
 // ---------- 2014 regulator ----------
 function stateReg(t, sh) { const Rg = U.reg; const ds = Rg.deskSpot || { x: 0, z: -1.6, ry: 0 }, vs = Rg.visitorSpot || { x: 0.6, z: 0, ry: Math.PI };
   const gone = sm(wAt('A4', 'desaparecieron'), wAt('A4', 'desaparecieron') + 0.35, t);
-  placeAt(reg, ds); reg.scale.setScalar(Math.max(0.001, 1 - gone)); reg.visible = gone < 0.999; act(reg, 'reguladora', t > LN.R1.start - 0.2 && t < LN.R1.end + 0.2 ? 'point' : 'crossed', 'angry', t, { seed: 9 });
+  placeAt(reg, ds, 0, 0, kit.sitY(reg, Rg.seatY ?? 0.45)); reg.scale.setScalar(Math.max(0.001, 1 - gone)); reg.visible = gone < 0.999; act(reg, 'reguladora', t > LN.R1.start - 0.2 && t < LN.R1.end + 0.2 ? 'point' : 'crossed', 'angry', t, { seed: 9, sit: true });
+  if (Rg.deskChair) Rg.deskChair.visible = gone < 0.999;
   placeAt(slimR, vs); const amp = t > LN.C5.start - 0.25; amparo.visible = amp; act(slimR, 'slim', amp ? 'showPhone' : 'handsBehind', 'smug', t, { seed: 1 });
   if (amp) kit.hold(slimR, 'L', amparo, { at: [0, -0.06, 0.01], rot: [0, 0, Math.PI], scale: PS });
   lookAt(reg, headPos(slimR), 0.6); lookAt(slimR, headPos(reg), 0.6);
   if (Rg.stamp) { const s0 = wAt('R1', 'preponderante'); const k = t < s0 - 0.25 ? 0 : t < s0 ? (t - (s0 - 0.25)) / 0.25 : 1; Rg.stamp.position.y = (Rg.stampY0 ?? Rg.stamp.position.y) ; if (Rg.stampY0 === undefined) Rg.stampY0 = Rg.stamp.position.y; Rg.stamp.position.y = Rg.stampY0 + 0.35 * (1 - k) * (t > s0 - 0.6 ? 1 : 0); Rg.stamp.visible = gone < 0.999; }
-  if (Rg.doc) Rg.doc.userData.draw((c, w, h) => { c.fillStyle = '#f6f3ea'; c.fillRect(0, 0, w, h); c.fillStyle = '#111'; c.font = F(800, w * 0.06); c.fillText('RESOLUCIÓN · 6 MARZO 2014', w * 0.08, h * 0.12); for (let i = 0; i < 7; i++) c.fillRect(w * 0.08, h * (0.2 + i * 0.05), w * (0.8 - (i % 3) * 0.12), 4);
+  if (Rg.doc) Rg.doc.draw((c, w, h) => { c.fillStyle = '#f6f3ea'; c.fillRect(0, 0, w, h); c.fillStyle = '#111'; c.font = F(800, w * 0.06); c.fillText('RESOLUCIÓN · 6 MARZO 2014', w * 0.08, h * 0.12); for (let i = 0; i < 7; i++) c.fillRect(w * 0.08, h * (0.2 + i * 0.05), w * (0.8 - (i % 3) * 0.12), 4);
     if (t > wAt('R1', 'preponderante') - 0.02) { c.save(); c.translate(w * 0.5, h * 0.7); c.rotate(-0.12); c.strokeStyle = '#c8102e'; c.lineWidth = 10; c.strokeRect(-w * 0.42, -h * 0.1, w * 0.84, h * 0.2); c.fillStyle = '#c8102e'; c.font = F(900, w * 0.075); c.textAlign = 'center'; c.fillText('AGENTE', 0, -h * 0.02); c.fillText('PREPONDERANTE', 0, h * 0.07); c.restore(); } });
   observers('reg', t); }
 function camReg(t, sh, a, b) { const u = clamp((t - a) / (b - a));
   if (sh === 'rWide') { const m = vl(headPos(reg), headPos(slimR), 0.5); cam(vl(V(m.x + 2.6, m.y + 0.4, m.z + 5.0), V(m.x + 1.8, m.y + 0.2, m.z + 4.2), sm(0, 1, u)), V(m.x, m.y - 0.5, m.z), 48); return; }
-  if (sh === 'stamp') { const d = U.reg.doc ? worldOf(U.reg.doc) : V(0, 0.8, -1); cam(V(d.x + 0.2, d.y + 1.1, d.z + 0.9), V(d.x, d.y, d.z), 40); return; }
-  if (sh === 'amparo') { camFront(slimR, 2.4 - 0.15 * u, 38, -0.12, 0.3, -0.25); return; }
-  if (sh === 'obs3' || sh === 'poof') { const m = vl(headPos(AB.reg), headPos(NI.reg), 0.5); const o = U.reg.observerSpot || { ry: 0 }; cam(V(m.x + Math.sin(o.ry ?? 0) * 3.2 + (sh === 'poof' ? 1.2 : 0), m.y - 0.2, m.z + Math.cos(o.ry ?? 0) * 3.2), sh === 'poof' ? vl(m, headPos(reg), 0.45) : V(m.x, m.y - 0.35, m.z), sh === 'poof' ? 52 : 44); return; }
+  if (sh === 'stamp') { cam(vl(V(0.9, 1.6, -0.3), V(0.75, 1.45, -0.45), u), V(0.2, 0.84, -1.28), 40); return; }
+  if (sh === 'amparo') { const h = headPos(slimR); cam(V(-0.6, 1.8, -2.7 + 0.1 * u), V(h.x, h.y - 0.25, h.z), 38); return; }
+  if (sh === 'obs3') { const m = vl(headPos(AB.reg), headPos(NI.reg), 0.5); const o = U.reg.observerSpot || { ry: 0 }; cam(V(m.x + Math.sin(o.ry ?? 0) * 3.2, m.y - 0.2, m.z + Math.cos(o.ry ?? 0) * 3.2), V(m.x, m.y - 0.35, m.z), 44); return; }
+  if (sh === 'poof') { cam(V(2.1, 1.75, 1.4), V(-0.1, 1.15, -1.45), 50); return; }
 }
 
 // ---------- overlay ----------
