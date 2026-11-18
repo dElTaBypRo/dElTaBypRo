@@ -1,0 +1,299 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}#gl{position:absolute;left:0;top:0;visibility:hidden}#out{position:absolute;left:0;top:0}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas><canvas id="out" width="1080" height="1920"></canvas>
+<script type="module">
+// "¿Cómo un señor se volvió el más rico del mundo cobrándote el teléfono?" — Slim/Telmex parody, no narrator.
+// Chained-questions structure: the grandson asks, each answer opens the next question. Grandpa and grandson "travel"
+// into every past scene and watch from a corner. Timeline from words_slim.json (tools/assemble_slim.py).
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createProps } from '../kit/propkit.js';
+import { createSlimSets } from '../kit/slimsets.js';
+const W = 1080, H = 1920; const Q = new URLSearchParams(location.search); const SUBMAX = +(Q.get('sub') || 2);
+const kit = createKit(THREE, RoundedBoxGeometry); const props = createProps(THREE, kit, 'clay'); const sets = createSlimSets(THREE, kit, props);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const sm = (a, b, t) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+const win = (a, b, t, f = 0.2) => sm(a, a + f, t) * (1 - sm(b - f, b, t));
+const lerp = (a, b, x) => a + (b - a) * x;
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const vl = (a, b, k) => a.clone().lerp(b, k);
+
+// ---------- dialogue data ----------
+const DATA = await (await fetch('./words_slim.json')).json();
+const words = DATA.words; const LN = Object.fromEntries(DATA.lines.map(l => [l.id, l])); const END = DATA.end;
+const norm = s => s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9%]/g, '');
+const wAt = (line, txt, k = 0) => { const ws = words.filter(w => w.line === line && norm(w.text) === norm(txt)); const w = ws[k] || ws[0]; if (!w) console.error('wAt miss', line, txt); return w ? w.start : LN[line].start; };
+const mouthAt = (spk, t) => { const a = DATA.mouth[spk]; if (!a) return 0; const f = t * DATA.fps, i = Math.floor(f); if (i < 0 || i + 1 >= a.length) return 0; return lerp(a[i], a[i + 1], f - i); };
+
+// ---------- renderer & sets ----------
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.95;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+const out = document.getElementById('out').getContext('2d');
+await document.fonts.load('900 90px Inter'); await document.fonts.load('800 90px Inter'); await document.fonts.load('700 90px Inter');
+const env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture;
+const mk = (bg) => { const s = new THREE.Scene(); s.environment = env; s.background = new THREE.Color(bg); return s; };
+const S = { living: mk(0x1a1410), auction: mk(0x120e0a), chart: mk(0x0e1218), money: mk(0x05060c), reg: mk(0x10100e) };
+const SET = { living: sets.livingRoom(), auction: sets.auction1990(), chart: sets.chartOffice(), money: sets.moneyMountain(), reg: sets.regulatorOffice() };
+for (const k in SET) S[k].add(SET[k]);
+const U = Object.fromEntries(Object.entries(SET).map(([k, g]) => [k, g.userData]));
+const ENVI = Object.fromEntries(Object.entries(SET).map(([k, g]) => [k, g.userData.envIntensity ?? 0.3]));
+const camera = new THREE.PerspectiveCamera(45, W / H, 0.03, 600);
+
+// ---------- cast (grandpa + grandson exist in every set: they "travel" to watch) ----------
+const mkC = (id, sc, over) => { const c = kit.build(over ? kit.deepMerge(structuredClone(kit.PRESETS[id]), over) : kit.PRESETS[id], 'clay'); S[sc].add(c); sets.setEnvIntensity(c, ENVI[sc]); return c; };
+const AB = {}, NI = {}; for (const k in S) { AB[k] = mkC('abuelo', k); NI[k] = mkC('nieto', k); }
+const SLIM90 = { hair: { color: '#4a4a4a' }, brows: { color: '#2a2a2a' }, head: { jowl: 0.35 }, body: { belly: 0.45 } };
+const salinas = mkC('salinas', 'auction'), slim90 = mkC('slim', 'auction', SLIM90);
+const partners = [mkC('rico', 'auction', { glasses: { style: 'none' }, hair: { color: '#c9a060' }, outfit: { top: '#3a3a3a', pants: '#3a3a3a', tie: '#2a4a8a' }, expression: 'happy' }),
+  mkC('banquero', 'auction', { outfit: { top: '#2a3a5a', pants: '#2a3a5a', vest: '', tie: '#c8102e' }, beard: { style: 'none' }, expression: 'happy' })];
+const bidders = [3, 7, 11, 19].map(s => { const c = kit.build(kit.townsperson(s), 'clay'); S.auction.add(c); sets.setEnvIntensity(c, ENVI.auction); return c; });
+const ocde = mkC('ocde', 'chart'), slimC = mkC('slim', 'chart');
+const slimM = mkC('slim', 'money');
+const reg = mkC('reguladora', 'reg'), slimR = mkC('slim', 'reg');
+
+// ---------- props ----------
+const PS = 1.7; const PH = { at: [0, -0.03, 0.012], rot: [0, 0, Math.PI], scale: PS };
+function paperProp(w, h, draw, res = 512) { const c = document.createElement('canvas'); c.width = res; c.height = Math.round(res * h / w); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, side: THREE.DoubleSide })); m.castShadow = true;
+  const g = new THREE.Group(); g.add(m); g.userData = { draw(fn) { fn(c.getContext('2d'), c.width, c.height); tex.needsUpdate = true; } }; if (draw) g.userData.draw(draw); return g; }
+const F = (wt, px) => `${wt} ${Math.round(px)}px Inter`;
+const receiptDraw = (c, w, h) => { c.fillStyle = '#efe2b8'; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(120,90,40,0.18)'; for (let i = 0; i < 30; i++) c.fillRect((i * 97) % w, (i * 61) % h, 40, 3);
+  c.fillStyle = '#3a2a14'; c.font = F(900, w * 0.075); c.fillText('TELÉFONOS DE MÉXICO', w * 0.06, h * 0.09); c.font = F(700, w * 0.05); c.fillText('Recibo · 1995', w * 0.06, h * 0.15);
+  c.font = F(700, w * 0.048); [['Renta mensual', '$78.00'], ['Larga distancia', ''], ['  Tijuana  32 min', '$412.80'], ['  Tijuana  18 min', '$232.20'], ['  Monterrey 9 min', '$96.30']].forEach(([a, b], i) => { c.fillText(a, w * 0.06, h * (0.26 + i * 0.075)); c.textAlign = 'right'; c.fillText(b, w * 0.94, h * (0.26 + i * 0.075)); c.textAlign = 'left'; });
+  c.fillRect(w * 0.06, h * 0.66, w * 0.88, 4); c.font = F(900, w * 0.07); c.fillText('TOTAL', w * 0.06, h * 0.75); c.textAlign = 'right'; c.fillStyle = '#b0201a'; c.fillText('$819.30', w * 0.94, h * 0.75); c.textAlign = 'left';
+  c.fillStyle = '#b0201a'; c.font = F(900, w * 0.06); c.save(); c.translate(w * 0.5, h * 0.88); c.rotate(-0.12); c.textAlign = 'center'; c.fillText('¡PAGUE A TIEMPO!', 0, 0); c.restore(); };
+const receipt = kit.hold(AB.living, 'R', paperProp(0.13, 0.2, receiptDraw), { at: [0, -0.06, 0.01], rot: [0, 0, Math.PI], scale: PS });
+const amparo = kit.hold(slimR, 'R', paperProp(0.13, 0.18, (c, w, h) => { c.fillStyle = '#f6f3ea'; c.fillRect(0, 0, w, h); c.fillStyle = '#111'; c.font = F(900, w * 0.16); c.textAlign = 'center'; c.fillText('AMPARO', w / 2, h * 0.25); c.font = F(700, w * 0.05); for (let i = 0; i < 9; i++) c.fillRect(w * 0.12, h * (0.36 + i * 0.06), w * (0.76 - (i % 3) * 0.1), 5); c.fillStyle = '#1a3a8a'; c.beginPath(); c.arc(w * 0.72, h * 0.9, w * 0.09, 0, 7); c.fill(); }), { at: [0, -0.06, 0.01], rot: [0, 0, Math.PI], scale: PS });
+const phoneA = kit.hold(AB.living, 'L', props.screenPhone(), PH); const phoneN = kit.hold(NI.living, 'R', props.screenPhone(), PH);
+const gavel = (() => { const g = new THREE.Group(); const wood = kit.makeMat('#6a3e22', 'leather', 'clay'); const h = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.2, 10), wood); h.position.y = 0.0; g.add(h);
+  const hd = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.1, 16), wood); hd.rotation.z = Math.PI / 2; hd.position.y = -0.1; g.add(hd); g.traverse(o => { o.castShadow = true; }); return g; })();
+kit.hold(salinas, 'R', gavel, { at: [0, 0.02, 0.02], rot: [0, 0, 0], scale: PS });
+const paddle = (() => { const g = new THREE.Group(); const hnd = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.16, 8), kit.makeMat('#c9a26b', 'leather', 'clay')); hnd.position.y = 0.0; g.add(hnd);
+  const card = paperProp(0.14, 0.14, (c, w, h) => { c.fillStyle = '#ffffff'; c.beginPath(); c.arc(w / 2, h / 2, w / 2 - 4, 0, 7); c.fill(); c.fillStyle = '#111'; c.font = F(900, w * 0.55); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('7', w / 2, h / 2 + 6); });
+  card.position.y = -0.15; g.add(card); return g; })();
+kit.hold(slim90, 'R', paddle, { at: [0, 0, 0.02], rot: [0, 0, Math.PI], scale: PS });
+const crown = (() => { const g = new THREE.Group(); const gold = new THREE.MeshStandardMaterial({ color: '#f2c230', metalness: 0.9, roughness: 0.25 }); const band = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.09, 24, 1, true), gold); band.material.side = THREE.DoubleSide; g.add(band);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const sp = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.1, 8), gold); sp.position.set(Math.sin(a) * 0.2, 0.09, Math.cos(a) * 0.2); g.add(sp); } return g; })();
+slimM.userData.rig.head.add(crown); crown.position.set(0, 0.42, 0);
+for (const o of [receipt, amparo, phoneA, phoneN, gavel, paddle]) sets.setEnvIntensity(o, 0.3);
+
+// ---------- screen / phone content ----------
+const forbesApp = (c, w, h) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = '#111'; c.fillRect(0, 0, w, 140); c.fillStyle = '#fff'; c.font = F(900, 56); c.fillText('Multimillonarios 2026', 26, 92);
+  c.fillStyle = '#5a6475'; c.font = F(700, 32); c.fillText('Lista anual · marzo 2026', 26, 200); c.fillStyle = '#111'; c.font = F(900, 46); c.fillText('Carlos Slim Helú', 26, 300); c.fillStyle = '#188038'; c.font = F(900, 110); c.fillText('$125,000', 18, 450);
+  c.fillStyle = '#111'; c.font = F(800, 38); c.fillText('millones de dólares', 26, 510); c.fillStyle = '#d93025'; c.font = F(900, 40); c.fillText('▲ récord personal', 26, 600); c.fillStyle = '#5a6475'; c.font = F(700, 30); c.fillText('El más rico de México', 26, 680); };
+const nietoPhone = (sig) => (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#3a2a6a'); g.addColorStop(1, '#0f1a3a'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(0, 0, w, 110); c.fillStyle = '#fff'; c.font = F(800, 40); c.fillText('9:41', 24, 72); c.textAlign = 'right'; c.font = F(800, 38);
+  if (sig > 0) { c.fillStyle = sig > 0.5 ? '#ffd84a' : '#fff'; c.fillText('Telcel  5G', w - 110, 72); } c.fillStyle = '#fff'; for (let i = 0; i < 4; i++) c.fillRect(w - 96 + i * 18, 74 - i * 12, 12, 12 + i * 12); c.textAlign = 'left';
+  if (sig > 0.5) { c.strokeStyle = '#ffd84a'; c.lineWidth = 8; c.beginPath(); c.roundRect(w - 330, 20, 300, 76, 20); c.stroke(); }
+  c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = F(900, 120); c.textAlign = 'center'; c.fillText('9:41', w / 2, 420); c.font = F(700, 36); c.fillText('martes 18 de noviembre', w / 2, 480); c.textAlign = 'left'; };
+phoneA.userData.draw(forbesApp); phoneN.userData.draw(nietoPhone(0));
+
+// ---------- helpers ----------
+const _v = new THREE.Vector3();
+const headPos = (c) => { c.updateMatrixWorld(true); return c.userData.rig.head.getWorldPosition(new THREE.Vector3()); };
+const worldOf = (o) => { o.updateWorldMatrix(true, false); return o.getWorldPosition(new THREE.Vector3()); };
+function act(c, spk, pose, expr, t, o = {}) { kit.setPose(c, pose, t, o); kit.setExpression(c, expr); if (!o.noBlink) kit.blink(c, t, o.seed || 0); if (spk) kit.setMouthOpen(c, mouthAt(spk, t) * (o.mouth ?? 1)); }
+function lookAt(c, target, k = 1) { c.updateMatrixWorld(true); const R = c.userData.rig; const l = c.worldToLocal(_v.copy(target)); const lh = c.worldToLocal(R.head.getWorldPosition(new THREE.Vector3()));
+  const dx = l.x - lh.x, dy = l.y - lh.y, dz = l.z - lh.z; const yaw = clamp(Math.atan2(dx, dz), -1.25, 1.25) * k; const pitch = clamp(-Math.atan2(dy, Math.hypot(dx, dz)), -0.45, 0.45) * k;
+  R.neck.rotation.y += yaw * 0.45; R.head.rotation.y += yaw * 0.55; R.head.rotation.x += pitch * 0.7; }
+const place = (c, x, z, ry, y = 0) => { c.position.set(x, y, z); c.rotation.set(0, ry, 0); };
+const placeAt = (c, s, dx = 0, dz = 0, y = 0) => place(c, s.x + dx, s.z + dz, s.ry ?? 0, y);
+let shake = 0, T = 0;
+function cam(p, tg, fov = 45) { camera.position.copy(p).add(V(Math.sin(T * 47) * shake, Math.sin(T * 53 + 1) * shake, 0)); camera.up.set(0, 1, 0); camera.lookAt(tg); camera.fov = fov; camera.updateProjectionMatrix(); }
+function camFront(c, dist, fov, dy = -0.12, side = 0.2, ty = -0.12) { const h = headPos(c); const f = c.localToWorld(V(side, 0, dist)); cam(V(f.x, h.y + dy, f.z), V(h.x, h.y + ty, h.z), fov); }
+function insert(obj, d, fov = 34) { const p = worldOf(obj); const q = obj.getWorldQuaternion(new THREE.Quaternion()); const n = V(0, 0, 1).applyQuaternion(q), up = V(0, 1, 0).applyQuaternion(q);
+  camera.position.copy(p).addScaledVector(n, d); camera.up.copy(up); camera.lookAt(p); camera.fov = fov; camera.updateProjectionMatrix(); }
+const speakerAt = (t) => { for (const l of DATA.lines) if (t >= l.start - 0.2 && t <= l.end + 0.3) return l.speaker; return null; };
+
+// ---------- shots ----------
+const tS = {
+  recibo: LN.A1.start - 0.15, n2: LN.N2.start - 0.2, a2: LN.A2.start - 0.15, n3: LN.N3.start - 0.2,
+  aWide: LN.S1.start - 1.25, salinas: LN.S1.start + 0.9, bid: LN.C1.start - 0.15, obs1: LN.N4.start - 0.2, pilon: LN.S2.start - 0.15, deal: LN.C2.start - 0.25,
+  cWide: LN.N5.start - 1.1, pies: wAt('A3', '2012') - 0.3, n6: LN.N6.start - 0.2, ocde: LN.O1.start - 0.15, bill: wAt('O1', '129') - 0.3, peek: LN.C3.start - 0.2,
+  mWide: LN.N7.start - 1.05, summit: LN.C4.start - 0.2, obs2: LN.N8.start - 0.2,
+  rWide: LN.R1.start - 1.05, stamp: wAt('R1', 'preponderante') - 0.6, amparo: LN.C5.start - 0.2, obs3: LN.N9.start - 0.2, poof: LN.A4.start - 0.15,
+  home: LN.N10.start - 1.05, forbes: wAt('A5', '125') - 0.25, n11: LN.N11.start - 0.2, final: LN.A6.start - 0.15, phoneSig: wAt('A6', 'pero') - 0.15, stare: LN.A6.end + 0.35,
+};
+const SHOTS = [['open', 0, 'living'], ['recibo', tS.recibo, 'living'], ['n2', tS.n2, 'living'], ['a2', tS.a2, 'living'], ['n3', tS.n3, 'living'],
+  ['aWide', tS.aWide, 'auction', 2], ['salinas', tS.salinas, 'auction'], ['bid', tS.bid, 'auction'], ['obs1', tS.obs1, 'auction'], ['pilon', tS.pilon, 'auction'], ['deal', tS.deal, 'auction'],
+  ['cWide', tS.cWide, 'chart', 2], ['pies', tS.pies, 'chart'], ['n6', tS.n6, 'chart'], ['ocde', tS.ocde, 'chart'], ['bill', tS.bill, 'chart'], ['peek', tS.peek, 'chart'],
+  ['mWide', tS.mWide, 'money', 2], ['summit', tS.summit, 'money'], ['obs2', tS.obs2, 'money'],
+  ['rWide', tS.rWide, 'reg', 2], ['stamp', tS.stamp, 'reg'], ['amparo', tS.amparo, 'reg'], ['obs3', tS.obs3, 'reg'], ['poof', tS.poof, 'reg'],
+  ['home', tS.home, 'living', 2], ['forbes', tS.forbes, 'living'], ['n11', tS.n11, 'living'], ['final', tS.final, 'living'], ['phoneSig', tS.phoneSig, 'living'], ['stare', tS.stare, 'living'], ['end', END + 1, 'living']]
+  .map(([name, t, sc, sub]) => ({ name, t, sc, sub }));
+const shotIdx = (t) => { let i = 0; while (i + 1 < SHOTS.length && t >= SHOTS[i + 1].t) i++; return i; };
+
+// ---------- observers (grandpa + grandson in a corner of each past scene) ----------
+function observers(sc, t, frozen) {
+  const o = U[sc].observerSpot || { x: 2, z: 1, ry: -0.8 }; const ab = AB[sc], ni = NI[sc];
+  const ry = o.ry ?? 0; const dx = Math.cos(ry) * 0.42, dz = -Math.sin(ry) * 0.42;
+  place(ab, o.x - dx, o.z - dz, ry); place(ni, o.x + dx, o.z + dz, ry);
+  const spk = speakerAt(t);
+  act(ab, 'abuelo', spk === 'abuelo' ? 'shrug' : 'handsBehind', spk === 'abuelo' ? 'smug' : 'neutral', t, { seed: 6 });
+  act(ni, 'nieto', spk === 'nieto' ? 'shrug' : 'crossed', spk === 'nieto' ? 'surprised' : 'neutral', t, { seed: 7 });
+  return { ab, ni };
+}
+
+// ---------- living room ----------
+function stateLiving(t, sh) {
+  const L = U.living; const seats = L.sofaSeats || [{ x: -0.4, z: -1.2, ry: 0 }, { x: 0.4, z: -1.2, ry: 0 }]; const ab = AB.living, ni = NI.living;
+  placeAt(ab, seats[0], 0, 0, kit.sitY(ab, L.seatY ?? 0.45)); placeAt(ni, seats[1], 0, 0, kit.sitY(ni, L.seatY ?? 0.45));
+  const late = t > tS.home - 0.1; const spk = speakerAt(t);
+  receipt.visible = !late; phoneA.visible = late && t > tS.forbes - 0.3 && t < tS.n11 + 0.4; phoneN.visible = true;
+  if (L.billBox) L.billBox.visible = true;
+  // grandpa
+  let ap = 'sit', ae = 'happy';
+  if (!late) { ap = t > LN.A1.start - 0.3 && t < LN.N3.end ? 'showPhone' : 'sit'; ae = t > LN.A2.start - 0.2 ? 'smug' : 'happy'; }
+  else { ap = phoneA.visible ? 'lookPhone' : t > tS.phoneSig - 0.3 ? 'point' : 'sit'; ae = t > LN.A6.start - 0.2 ? 'smug' : 'neutral'; }
+  if (!late && ap === 'showPhone') { kit.hold(ab, 'L', receipt, { at: [0, -0.06, 0.01], rot: [0, 0, Math.PI], scale: PS }); }
+  act(ab, 'abuelo', ap, ae, t, { sit: true, seed: 2 });
+  // grandson
+  const shocked = t > LN.N2.start - 0.15 && t < LN.N2.end + 0.6;
+  act(ni, 'nieto', 'lookPhone', shocked ? 'shocked' : t > LN.N11.start - 0.2 && t < LN.A6.start ? 'happy' : t > LN.A6.end ? 'worried' : 'neutral', t, { sit: true, seed: 3 });
+  phoneN.userData.draw(nietoPhone(t > tS.phoneSig ? clamp((t - tS.phoneSig) / 0.3) : 0));
+  if (spk === 'abuelo') lookAt(ni, headPos(ab), 0.9); else if (sh !== 'stare') lookAt(ni, ap === 'showPhone' ? worldOf(receipt) : headPos(ab), 0.6);
+  if (spk === 'nieto') lookAt(ab, headPos(ni), 0.8); else if (phoneA.visible) lookAt(ab, worldOf(phoneA), 0.6);
+  if (sh === 'stare') lookAt(ni, camera.position, 0.9);
+}
+function camLiving(t, sh, a, b) { const u = clamp((t - a) / (b - a)); const ab = AB.living, ni = NI.living;
+  const mid = vl(headPos(ab), headPos(ni), 0.5);
+  if (sh === 'open' || sh === 'home') { cam(V(mid.x + 0.25, mid.y - 0.15, mid.z + 3.3 - 0.3 * u), V(mid.x, mid.y - 0.45, mid.z), 46); return; }
+  if (sh === 'recibo') { insert(receipt, 0.42 - 0.04 * u, 34); return; }
+  if (sh === 'n2' || sh === 'n3' || sh === 'n11' || sh === 'stare') { camFront(ni, 2.35 - 0.15 * u, 36, -0.1, -0.35); return; }
+  if (sh === 'a2' || sh === 'final') { camFront(ab, 2.35 - 0.15 * u, 36, -0.1, 0.35); return; }
+  if (sh === 'forbes') { insert(phoneA, 0.4 - 0.04 * u, 34); return; }
+  if (sh === 'phoneSig') { insert(phoneN, 0.36 - 0.03 * u, 34); return; }
+}
+
+// ---------- 1990 auction (sepia in post) ----------
+function stateAuction(t, sh) {
+  const A = U.auction; const pod = A.podium || { x: 0, z: -2.5, ry: 0 }; const seat = A.bidderSeat || { x: 0, z: 0, ry: Math.PI, seatY: 0.45 };
+  placeAt(salinas, pod); const dealing = t > tS.deal - 0.05;
+  if (dealing) place(slim90, pod.x + 0.85, pod.z + 0.55, -1.2); else placeAt(slim90, seat, 0, 0, kit.sitY(slim90, seat.seatY ?? 0.45));
+  const bang = (k) => Math.max(0, 1 - Math.abs(t - k) / 0.12);
+  act(salinas, 'salinas', dealing ? 'handshake' : t < LN.S2.start - 0.2 ? 'podium' : 'presenting', t > LN.S2.start - 0.2 ? 'smug' : 'grin', t, { seed: 4 });
+  const R = salinas.userData.rig; R.shoulderR.rotation.x -= 0.6 * Math.max(bang(LN.S1.start), bang(LN.C2.start), bang(LN.C2.start + 0.28), bang(LN.C2.start + 0.56));
+  const raised = t > LN.C1.start - 0.1 && !dealing;
+  act(slim90, 'slim', dealing ? 'handshake' : raised ? 'handsUp' : 'sit', 'smug', t, { sit: !dealing, seed: 1 }); paddle.visible = !dealing;
+  if (raised) { const RR = slim90.userData.rig; RR.shoulderL.rotation.set(-0.2, 0, -0.3); RR.elbowL.rotation.set(-1.4, 0, 0); }
+  const ps = A.partnerSeats || [{ x: seat.x - 0.75, z: seat.z, ry: seat.ry }, { x: seat.x + 0.75, z: seat.z, ry: seat.ry }];
+  partners.forEach((c, i) => { placeAt(c, ps[i], 0, 0, kit.sitY(c, seat.seatY ?? 0.45)); act(c, null, 'sit', 'happy', t, { sit: true, seed: 8 + i }); lookAt(c, headPos(salinas), 0.6); });
+  const bs = A.bidderSeats || [];
+  bidders.forEach((c, i) => { const s = bs[i]; if (!s) { c.visible = false; return; } c.visible = true; placeAt(c, s, 0, 0, kit.sitY(c, s.seatY ?? 0.45)); act(c, null, 'sit', i % 2 ? 'surprised' : 'neutral', t, { sit: true, seed: 11 + i }); lookAt(c, headPos(raised ? slim90 : salinas), 0.6); });
+  if (!dealing) lookAt(slim90, headPos(salinas), 0.7); lookAt(salinas, headPos(slim90), dealing ? 0.5 : 0.7);
+  observers('auction', t);
+  if (A.screen) A.screen.userData.draw(auctionScreen(t));
+}
+function auctionScreen(t) { return (c, w, h) => { c.fillStyle = '#1a1208'; c.fillRect(0, 0, w, h); c.fillStyle = '#f2e6c8'; c.textAlign = 'center';
+  if (t < LN.C1.start + 0.6) { c.font = F(900, h * 0.2); c.fillText('TELMEX', w / 2, h * 0.42); c.fillStyle = '#e8b04a'; c.font = F(900, h * 0.16); c.fillText('SE VENDE', w / 2, h * 0.7); }
+  else if (t < LN.S2.start + 0.5) { c.font = F(800, h * 0.11); c.fillText('VENDIDA · 1990', w / 2, h * 0.3); c.fillStyle = '#e8b04a'; c.font = F(900, h * 0.2); c.fillText('$1,760 millones', w / 2, h * 0.58); c.fillStyle = '#f2e6c8'; c.font = F(700, h * 0.09); c.fillText('de dólares, por el control', w / 2, h * 0.78); }
+  else { c.font = F(800, h * 0.1); c.fillText('LARGA DISTANCIA', w / 2, h * 0.3); c.fillStyle = '#e8b04a'; c.font = F(900, h * 0.18); c.fillText('SOLO TELMEX', w / 2, h * 0.56); c.fillStyle = '#f2e6c8'; c.font = F(800, h * 0.12); c.fillText('hasta 1996', w / 2, h * 0.8); }
+  c.textAlign = 'left'; }; }
+function camAuction(t, sh, a, b) { const u = clamp((t - a) / (b - a)); const A = U.auction;
+  if (sh === 'aWide') { const p = headPos(salinas); cam(vl(V(p.x + 2.2, p.y + 0.9, p.z + 6.8), V(p.x + 1.4, p.y + 0.5, p.z + 5.6), sm(0, 1, u)), V(p.x, p.y - 0.2, p.z), 48); return; }
+  if (sh === 'salinas' || sh === 'pilon') { const h = headPos(salinas); const f = salinas.localToWorld(V(sh === 'pilon' ? -0.4 : 0.35, 0, 2.4 - 0.2 * u)); cam(V(f.x, h.y - (sh === 'pilon' ? 0.15 : 0.5), f.z), V(h.x, h.y - 0.15, h.z), sh === 'pilon' ? 34 : 38); return; }
+  if (sh === 'bid') { camFront(slim90, 2.6 - 0.2 * u, 44, 0.05, 0.4, -0.2); return; }
+  if (sh === 'obs1') { const h = vl(headPos(AB.auction), headPos(NI.auction), 0.5); const o = A.observerSpot || { ry: 0 }; const f = V(h.x + Math.sin(o.ry ?? 0) * 3.0, h.y - 0.2, h.z + Math.cos(o.ry ?? 0) * 3.0); cam(f, V(h.x, h.y - 0.35, h.z), 44); return; }
+  if (sh === 'deal') { const m = vl(headPos(salinas), headPos(slim90), 0.5); cam(V(m.x + 0.4, m.y - 0.2, m.z + 3.0 - 0.2 * u), V(m.x, m.y - 0.45, m.z), 46); return; }
+}
+
+// ---------- 2012 OECD office ----------
+function chartScreen(t) { return (c, w, h) => { c.fillStyle = '#f4f6fa'; c.fillRect(0, 0, w, h); const cx0 = w * 0.5; c.textAlign = 'center';
+  if (t < tS.ocde) { c.fillStyle = '#111'; c.font = F(900, h * 0.075); c.fillText('MÉXICO · TELEFONÍA 2012', cx0, h * 0.11);
+    const pie = (x, y, rad, pct, label, at) => { const k = clamp((t - at) / 0.6); c.fillStyle = '#d9dee6'; c.beginPath(); c.arc(x, y, rad, 0, 7); c.fill(); c.fillStyle = '#1f4fa8'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, rad, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct * k); c.closePath(); c.fill();
+      c.fillStyle = '#111'; c.font = F(900, h * 0.12); c.fillText(Math.round(pct * 100 * k) + '%', x, y + rad + h * 0.15); c.font = F(800, h * 0.055); c.fillText(label, x, y + rad + h * 0.23); };
+    pie(w * 0.39, h * 0.4, h * 0.2, 0.8, 'teléfonos fijos', wAt('A3', '80%') - 0.2); pie(w * 0.61, h * 0.4, h * 0.2, 0.7, 'celulares', wAt('A3', '70%') - 0.2); c.textAlign = 'left'; return; }
+  c.fillStyle = '#0e2a5a'; c.fillRect(0, 0, w, h); c.fillStyle = '#9fc0ff'; c.font = F(800, h * 0.07); c.fillText('OCDE · REPORTE 2012', cx0, h * 0.13); c.fillStyle = '#fff'; c.font = F(800, h * 0.06); c.fillText('Lo que pagaron de más los mexicanos', cx0, h * 0.23);
+  const k = clamp((t - wAt('O1', '129') + 0.1) / 1.2); const n = Math.round(129 * (1 - Math.pow(1 - k, 3)));
+  c.fillStyle = '#7CFFB2'; c.font = F(900, h * 0.2); c.fillText('$' + n + ' mil', cx0, h * 0.5); c.font = F(900, h * 0.08); c.fillText('millones de dólares', cx0, h * 0.62);
+  c.fillStyle = '#fff'; c.font = F(800, h * 0.06); c.fillText('2005 – 2009 · 1.8% del PIB cada año', cx0, h * 0.75); if (t > LN.C3.start - 0.1) { c.fillStyle = '#ffcf3a'; c.font = F(700, h * 0.045); c.fillText('América Móvil rechazó el reporte', cx0, h * 0.86); } c.textAlign = 'left'; }; }
+function stateChart(t, sh) { const C = U.chart; const ps = C.presenterSpot || { x: -1.2, z: -1.6, ry: 0.3 }; placeAt(ocde, ps);
+  act(ocde, 'ocde', t > LN.O1.start - 0.2 ? 'presenting' : 'idle', 'neutral', t, { seed: 5 });
+  const pk = C.peekSpot || { x: 2.2, z: -0.5, ry: -1.2 }; const peekK = sm(LN.C3.start - 0.5, LN.C3.start - 0.1, t); slimC.visible = peekK > 0;
+  place(slimC, pk.x + Math.sin(pk.ry ?? 0) * -0.5 * (1 - peekK), pk.z + Math.cos(pk.ry ?? 0) * -0.5 * (1 - peekK), pk.ry ?? 0); act(slimC, 'slim', 'point', 'angry', t, { seed: 1 });
+  const ob = observers('chart', t); if (C.screen) { C.screen.userData.draw(chartScreen(t)); lookAt(ob.ni, worldOf(C.screen), 0.5); }
+  if (slimC.visible) lookAt(ocde, headPos(slimC), 0.6); }
+function camChart(t, sh, a, b) { const u = clamp((t - a) / (b - a)); const C = U.chart; const sp = C.screen ? worldOf(C.screen) : V(0, 1.9, -3);
+  if (sh === 'cWide') { cam(vl(V(sp.x + 1.6, sp.y - 0.2, sp.z + 6.2), V(sp.x + 1.0, sp.y - 0.25, sp.z + 5.4), sm(0, 1, u)), V(sp.x, sp.y - 0.5, sp.z), 48); return; }
+  if (sh === 'pies' || sh === 'bill') { cam(V(sp.x, sp.y + 0.02, sp.z + 2.45 - 0.12 * u), V(sp.x, sp.y, sp.z), 46); return; }
+  if (sh === 'n6') { camFront(NI.chart, 2.4, 36, -0.1, 0.3); return; }
+  if (sh === 'ocde') { camFront(ocde, 2.45 - 0.15 * u, 38, -0.1, 0.3); return; }
+  if (sh === 'peek') { camFront(slimC, 2.4, 36, -0.12, -0.3); return; }
+}
+
+// ---------- money mountain ----------
+function stateMoney(t, sh) { const M = U.money; const s = M.summit || { x: 0, y: 2.5, z: 0 }; place(slimM, s.x, s.z, s.ry ?? 0, s.y);
+  act(slimM, 'slim', t > LN.C4.start - 0.2 && t < LN.C4.end + 0.5 ? 'handsUp' : 'rubHands', 'grin', t, { seed: 1 });
+  const ob = observers('money', t); lookAt(ob.ni, headPos(slimM), 0.7); lookAt(ob.ab, headPos(slimM), 0.5); if (M.update) M.update(t); }
+function camMoney(t, sh, a, b) { const u = clamp((t - a) / (b - a)); const h = headPos(slimM);
+  if (sh === 'mWide') { cam(vl(V(h.x + 2.5, 1.2, h.z + 8.5), V(h.x + 1.8, 1.4, h.z + 7.2), sm(0, 1, u)), V(h.x, h.y - 1.3, h.z), 50); return; }
+  if (sh === 'summit') { const f = slimM.localToWorld(V(0.35, 0, 2.4 - 0.2 * u)); cam(V(f.x, h.y - 0.75, f.z), V(h.x, h.y - 0.05, h.z), 40); return; }
+  if (sh === 'obs2') { const m = vl(headPos(AB.money), headPos(NI.money), 0.5); const o = U.money.observerSpot || { ry: 0 }; cam(V(m.x + Math.sin(o.ry ?? 0) * 3.0, m.y - 0.25, m.z + Math.cos(o.ry ?? 0) * 3.0), V(m.x, m.y - 0.35, m.z), 44); return; }
+}
+
+// ---------- 2014 regulator ----------
+function stateReg(t, sh) { const Rg = U.reg; const ds = Rg.deskSpot || { x: 0, z: -1.6, ry: 0 }, vs = Rg.visitorSpot || { x: 0.6, z: 0, ry: Math.PI };
+  const gone = sm(wAt('A4', 'desaparecieron'), wAt('A4', 'desaparecieron') + 0.35, t);
+  placeAt(reg, ds); reg.scale.setScalar(Math.max(0.001, 1 - gone)); reg.visible = gone < 0.999; act(reg, 'reguladora', t > LN.R1.start - 0.2 && t < LN.R1.end + 0.2 ? 'point' : 'crossed', 'angry', t, { seed: 9 });
+  placeAt(slimR, vs); const amp = t > LN.C5.start - 0.25; amparo.visible = amp; act(slimR, 'slim', amp ? 'showPhone' : 'handsBehind', 'smug', t, { seed: 1 });
+  if (amp) kit.hold(slimR, 'L', amparo, { at: [0, -0.06, 0.01], rot: [0, 0, Math.PI], scale: PS });
+  lookAt(reg, headPos(slimR), 0.6); lookAt(slimR, headPos(reg), 0.6);
+  if (Rg.stamp) { const s0 = wAt('R1', 'preponderante'); const k = t < s0 - 0.25 ? 0 : t < s0 ? (t - (s0 - 0.25)) / 0.25 : 1; Rg.stamp.position.y = (Rg.stampY0 ?? Rg.stamp.position.y) ; if (Rg.stampY0 === undefined) Rg.stampY0 = Rg.stamp.position.y; Rg.stamp.position.y = Rg.stampY0 + 0.35 * (1 - k) * (t > s0 - 0.6 ? 1 : 0); Rg.stamp.visible = gone < 0.999; }
+  if (Rg.doc) Rg.doc.userData.draw((c, w, h) => { c.fillStyle = '#f6f3ea'; c.fillRect(0, 0, w, h); c.fillStyle = '#111'; c.font = F(800, w * 0.06); c.fillText('RESOLUCIÓN · 6 MARZO 2014', w * 0.08, h * 0.12); for (let i = 0; i < 7; i++) c.fillRect(w * 0.08, h * (0.2 + i * 0.05), w * (0.8 - (i % 3) * 0.12), 4);
+    if (t > wAt('R1', 'preponderante') - 0.02) { c.save(); c.translate(w * 0.5, h * 0.7); c.rotate(-0.12); c.strokeStyle = '#c8102e'; c.lineWidth = 10; c.strokeRect(-w * 0.42, -h * 0.1, w * 0.84, h * 0.2); c.fillStyle = '#c8102e'; c.font = F(900, w * 0.075); c.textAlign = 'center'; c.fillText('AGENTE', 0, -h * 0.02); c.fillText('PREPONDERANTE', 0, h * 0.07); c.restore(); } });
+  observers('reg', t); }
+function camReg(t, sh, a, b) { const u = clamp((t - a) / (b - a));
+  if (sh === 'rWide') { const m = vl(headPos(reg), headPos(slimR), 0.5); cam(vl(V(m.x + 2.6, m.y + 0.4, m.z + 5.0), V(m.x + 1.8, m.y + 0.2, m.z + 4.2), sm(0, 1, u)), V(m.x, m.y - 0.5, m.z), 48); return; }
+  if (sh === 'stamp') { const d = U.reg.doc ? worldOf(U.reg.doc) : V(0, 0.8, -1); cam(V(d.x + 0.2, d.y + 1.1, d.z + 0.9), V(d.x, d.y, d.z), 40); return; }
+  if (sh === 'amparo') { camFront(slimR, 2.4 - 0.15 * u, 38, -0.12, 0.3, -0.25); return; }
+  if (sh === 'obs3' || sh === 'poof') { const m = vl(headPos(AB.reg), headPos(NI.reg), 0.5); const o = U.reg.observerSpot || { ry: 0 }; cam(V(m.x + Math.sin(o.ry ?? 0) * 3.2 + (sh === 'poof' ? 1.2 : 0), m.y - 0.2, m.z + Math.cos(o.ry ?? 0) * 3.2), sh === 'poof' ? vl(m, headPos(reg), 0.45) : V(m.x, m.y - 0.35, m.z), sh === 'poof' ? 52 : 44); return; }
+}
+
+// ---------- overlay ----------
+const CX = W / 2 - 40;
+const SPK = { abuelo: '#ffb36a', nieto: '#7fc8ff', slim: '#ffd84a', salinas: '#b9e07a', ocde: '#ff8fb1', reguladora: '#ff7a7a' };
+const groups = []; { let cur = []; for (const w of words) { if (cur.length && (cur.length >= 4 || cur[0].line !== w.line || /[.,?!:…]$/.test(cur.at(-1).text))) { groups.push(cur); cur = []; } cur.push(w); } if (cur.length) groups.push(cur); }
+function drawCaption(t) {
+  let g = null; for (let i = 0; i < groups.length; i++) { const s = groups[i][0].start, e = Math.min(i + 1 < groups.length ? groups[i + 1][0].start : 1e9, groups[i].at(-1).end + 0.5); if (t >= s - 0.05 && t < e) { g = groups[i]; break; } }
+  if (!g) return; const size = 68; const col = SPK[g[0].speaker] || '#fff'; out.save(); out.font = `900 ${size}px Inter`; out.textBaseline = 'middle';
+  const toks = g.map(w => w.text.toUpperCase().replace(/\.\.\.$/, '…')); const sp = size * 0.28; const ws = toks.map(s => out.measureText(s).width);
+  const lines = [[]]; let lw = 0; toks.forEach((s, i) => { if (lw + ws[i] > 820 && lines.at(-1).length) { lines.push([]); lw = 0; } lines.at(-1).push(i); lw += ws[i] + sp; });
+  const y0 = 1250 - (lines.length - 1) * size * 0.55; const pop = 1 + 0.05 * Math.max(0, 1 - (t - g[0].start) / 0.12);
+  lines.forEach((ln, li) => { const tot = ln.reduce((a, i) => a + ws[i], 0) + sp * (ln.length - 1); let x = CX - tot / 2; const y = y0 + li * size * 1.1;
+    for (const i of ln) { const w = g[i]; const active = t >= w.start - 0.03; out.save(); out.translate(x + ws[i] / 2, y); out.scale(pop, pop); out.lineJoin = 'round'; out.lineWidth = size * 0.2; out.strokeStyle = '#000'; out.strokeText(toks[i], -ws[i] / 2, 0);
+      out.fillStyle = active ? col : 'rgba(255,255,255,0.5)'; out.fillText(toks[i], -ws[i] / 2, 0); out.restore(); x += ws[i] + sp; } });
+  out.restore();
+}
+// time-travel transition: VHS bands + flash around each cut between eras
+const ERA_CUTS = [tS.aWide, tS.cWide, tS.mWide, tS.rWide, tS.home];
+function vhs(t) { for (const c of ERA_CUTS) { const d = t - c; if (d > -0.35 && d < 0.35) { const k = 1 - Math.abs(d) / 0.35; out.save(); out.globalAlpha = 0.55 * k;
+  for (let i = 0; i < 26; i++) { const y = ((i * 211 + Math.floor(t * 60) * 97) % H); out.fillStyle = i % 3 ? 'rgba(255,255,255,0.35)' : 'rgba(0,200,255,0.35)'; out.fillRect(0, y, W, 6 + (i % 5) * 5); }
+  out.globalAlpha = 0.6 * k * k; out.fillStyle = '#fff'; out.fillRect(0, 0, W, H); out.restore(); } } }
+function eraTag(t, sc) { // small year stamp in the top-left of each past scene (in-scene style, like a camcorder date)
+  const lab = { auction: '1990', chart: '2012', money: '2010–2013', reg: '2014' }[sc]; if (!lab) return; out.save(); out.font = F(800, 46); out.fillStyle = 'rgba(255,240,200,0.85)'; out.shadowColor = 'rgba(0,0,0,0.6)'; out.shadowBlur = 6; out.fillText('▶ ' + lab, 70, 300); out.restore(); }
+
+// ---------- frame ----------
+function renderScene(t) {
+  T = t; const i = shotIdx(t); const s = SHOTS[i]; const a = s.t, b = SHOTS[i + 1] ? SHOTS[i + 1].t : END;
+  const run = { living: [stateLiving, camLiving], auction: [stateAuction, camAuction], chart: [stateChart, camChart], money: [stateMoney, camMoney], reg: [stateReg, camReg] }[s.sc];
+  run[0](t, s.name); run[1](t, s.name, a, b); r.toneMappingExposure = U[s.sc].exposure ?? 0.95; r.render(S[s.sc], camera); return s.sc;
+}
+window.renderAt = (t) => {
+  const i = shotIdx(t); const SUB = Math.min(SUBMAX, SHOTS[i].sub || 1); const shutter = 0.5 / 30; let sc = 'living';
+  for (let k = 0; k < SUB; k++) { const ts = t - shutter / 2 + shutter * (SUB === 1 ? 0.5 : k / (SUB - 1)); sc = renderScene(Math.max(0, Math.min(ts, END))); out.filter = sc === 'auction' ? 'sepia(0.85) contrast(1.05) brightness(1.02)' : 'none'; out.globalAlpha = 1 / (k + 1); out.drawImage(r.domElement, 0, 0); }
+  out.filter = 'none'; out.globalAlpha = 1;
+  if (sc === 'auction') { out.save(); out.globalAlpha = 0.08; for (let k = 0; k < 900; k++) { out.fillStyle = k % 2 ? '#000' : '#fff'; out.fillRect((k * 7919 + Math.floor(t * 30) * 131) % W, (k * 104729 + Math.floor(t * 30) * 71) % H, 2, 2); } out.restore(); }
+  const vg = out.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, sc === 'auction' ? 'rgba(40,20,0,0.55)' : 'rgba(0,0,0,0.4)'); out.fillStyle = vg; out.fillRect(0, 0, W, H);
+  vhs(t);
+  const fade = Math.max(1 - sm(0, 0.3, t), sm(END - 0.6, END, t)); if (fade > 0) { out.fillStyle = `rgba(0,0,0,${fade})`; out.fillRect(0, 0, W, H); }
+  if (!Q.get('nocap')) drawCaption(t);
+  return true;
+};
+window.DBG = { THREE, kit, U, AB, NI, salinas, slim90, slimC, slimM, slimR, ocde, reg, camera, LN, wAt, tS, SHOTS, receipt, phoneA, phoneN };
+window.READY = true;
+</script></body></html>

@@ -1,0 +1,15 @@
+{
+  "_note": "One ElevenLabs generation per character (eleven_v4), lines in order, separated by [long pause]. Numbers spelled out so the voice reads them right; captions convert them back (tools/assemble_slim.py MERGE). Save each chosen take as audio/slim/<speaker>.mp3 and its scribe word timings as <speaker>.words.json, then run python3 tools/assemble_slim.py.",
+  "abuelo": {"voice": "Oslo - Grandpa Storyteller", "voice_id": "2lj4aExF052KSi14NJCI",
+    "prompt": "[warm, nostalgic, amused] Mi recibo del teléfono de mil novecientos noventa y cinco. Una llamadita a Tijuana... y adiós quincena. [long pause] [matter-of-fact] Porque nomás había una compañía... y era del gobierno. [long pause] [wry] Llegó... pero en dos mil doce él todavía tenía el ochenta por ciento de los teléfonos fijos, y el setenta por ciento de los celulares. [long pause] [dry, resigned] En dos mil veinticinco lo desaparecieron. Ahora lo regula el gobierno directito. [long pause] [ironic] Ciento veinticinco mil millones de dólares. Más rico que nunca. [long pause] [tender, ironic] Ahora pagas en abonitos, mijo... pero al mismo señor."},
+  "nieto": {"voice": "Rodolfo", "voice_id": "7AqHwKQ17Ysvj9JrkWfa",
+    "prompt": "[curious] Abuelo, ¿qué es eso? [long pause] [shocked] ¿¡Por qué era tan caro!? [long pause] [curious] ¿Y cómo dejó de ser del gobierno? [long pause] [whispering, curious] ¿Y con eso se hizo rico? [long pause] [curious] ¿Y cuando por fin llegó la competencia? [long pause] [worried] ¿Y eso cuánto nos costó? [long pause] [annoyed] ¿Y él mientras qué? [long pause] [indignant] ¿Y nadie lo paró? [long pause] [hopeful] ¿Y ese regulador todavía existe? [long pause] [curious] ¿Y Slim? [long pause] [hopeful, then unsure] O sea que... ¿ya no pago caro?"},
+  "slim": {"voice": "Roberto - Warm Baritone Broadcaster", "voice_id": "gUzzwyvvop8GQmnl2Akf",
+    "prompt": "[calm, confident] Yo la compro. Con mis socios gringos y franceses. [long pause] [pleased] ¡Trato hecho! [long pause] [offended] ¡Esos datos están mal! [long pause] [proud, smug] El hombre más rico del mundo... de dos mil diez a dos mil trece. [long pause] [calm, smug] Me amparo."},
+  "salinas": {"voice": "Voz Irving", "voice_id": "OI4r2b6O5uBjSFmdGSdJ",
+    "prompt": "[loud, theatrical auctioneer] ¡Se vende la telefónica de todos los mexicanos! [long pause] [conspiratorial, low voice] Y de pilón... nadie te puede competir en larga distancia hasta mil novecientos noventa y seis."},
+  "ocde": {"voice": "Isabel", "voice_id": "rixsIpPlTphvsJd2mI03",
+    "prompt": "[serious, informative] Según nuestro cálculo... ciento veintinueve mil millones de dólares, en solo cinco años."},
+  "reguladora": {"voice": "Diana - Cálida, Expresiva y Profesional", "voice_id": "KUvfKweuqSul0lbDIZUB",
+    "prompt": "[firm, official] Por la reforma de dos mil trece, lo declaramos agente preponderante. Le vamos a poner reglas especiales."}
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/"}}</script>
+</head><body><canvas id="gl" width="1080" height="1920"></canvas>
+<script type="module">
+// Cast preview for the Amazon video: renderAt(i) shows view i (0-5 portraits, 6+ pose/hold tests).
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createKit } from '../kit/charkit.js';
+import { createProps } from '../kit/propkit.js';
+const W = 1080, H = 1920;
+const kit = createKit(THREE, RoundedBoxGeometry); const props = createProps(THREE, kit, 'clay');
+const MAT = (c, k = 'cloth') => kit.makeMat(c, k, 'clay');
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.92;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+await document.fonts.load('900 90px Inter');
+const scene = new THREE.Scene(); scene.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(r), 0.04).texture; scene.environmentIntensity = 0.3;
+scene.background = new THREE.Color(0xe9dccb);
+scene.add(new THREE.HemisphereLight(0xfff2e0, 0x6a5a4a, 0.5));
+const key = new THREE.DirectionalLight(0xfff0dc, 1.9); key.position.set(3, 6, 5); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4 }); scene.add(key);
+const rim = new THREE.DirectionalLight(0xb0c8ff, 1.2); rim.position.set(-4, 3, -4); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), MAT('#e2d3bf')); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+const IDS = ['abuelo', 'nieto', 'slim', 'salinas', 'ocde', 'reguladora'];
+const C = Object.fromEntries(IDS.map(id => { const c = kit.build(kit.PRESETS[id], 'clay'); scene.add(c); return [id, c]; }));
+C.slim90 = kit.build(kit.deepMerge(structuredClone(kit.PRESETS.slim), { hair: { color: '#4a4a4a' }, brows: { color: '#2a2a2a' }, head: { jowl: 0.35 }, body: { belly: 0.45 } }), 'clay'); scene.add(C.slim90);
+const phone = props.screenPhone(); phone.userData.draw((c, w, h) => { c.fillStyle = '#0d1b2a'; c.fillRect(0, 0, w, h); c.fillStyle = '#7CFFB2'; c.font = '900 80px Inter'; c.fillText('$125,000', 20, 400); }); const PS = 1.7;
+const cam = new THREE.PerspectiveCamera(30, W / H, 0.05, 100);
+const look = (x, y, z, tx, ty, tz, fov = 30) => { cam.position.set(x, y, z); cam.lookAt(tx, ty, tz); cam.fov = fov; cam.updateProjectionMatrix(); };
+window.renderAt = (t) => {
+  const i = Math.floor(t + 1e-6), u = t - i; const T = 1.3 + u;
+  for (const c of Object.values(C)) { c.position.set(0, -50, 0); c.rotation.set(0, 0, 0); }
+  const id = ['abuelo', 'nieto', 'slim', 'salinas', 'ocde', 'reguladora', 'slim90'][i] || 'abuelo';
+  const c = C[id]; c.position.set(0, 0, 0); c.rotation.y = 0.35;
+  const pose = { abuelo: 'shrug', nieto: 'lookPhone', slim: 'rubHands', salinas: 'presenting', ocde: 'point', reguladora: 'crossed', slim90: 'thumbsUp' }[id];
+  kit.setPose(c, pose, T); kit.setExpression(c, { abuelo: 'happy', nieto: 'surprised', slim: 'smug', salinas: 'grin', ocde: 'neutral', reguladora: 'angry', slim90: 'grin' }[id]);
+  if (id === 'nieto') kit.hold(c, 'R', phone, { at: [0, -0.03, 0.012], rot: [0, 0, Math.PI], scale: PS });
+  c.updateMatrixWorld(true); const h = c.userData.rig.head.getWorldPosition(new THREE.Vector3());
+  look(0.5, h.y - 0.3, 3.6, 0, h.y - 0.45, 0, 34);
+  r.render(scene, cam); return true;
+};
+window.READY = true;
+</script></body></html>
