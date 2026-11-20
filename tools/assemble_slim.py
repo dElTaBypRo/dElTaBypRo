@@ -3,6 +3,7 @@
 Lines are chained one after another (each with its own gap before it), so the timeline adapts to the real voice durations.
 - Real mode: audio/slim/<speaker>.mp3 + <speaker>.words.json exist for every speaker (one ElevenLabs take per character,
   lines separated by [long pause], word timings from scribe).
+- Per-line mode: audio/slim/lines/<LINE>.mp3 + <LINE>.words.json for every line (Google TTS, tools/tts_google_slim.py).
 - Placeholder mode (no audio yet): durations are estimated from the text, the track is silent and the mouth envelope
   is synthetic, so the scene can be built and framed before the voices exist. Re-run once the voices arrive.
 Outputs: scenes/vo_slim.wav/.mp3 and scenes/words_slim.json (end, lines, words, per-speaker mouth envelopes at 30 fps).
@@ -97,16 +98,22 @@ def placeholder_words(text):
 
 
 def main():
-    real = all(os.path.exists(os.path.join(SRC, s + '.mp3')) for s in {l[1] for l in LINES})
+    per_line = all(os.path.exists(os.path.join(SRC, 'lines', l[0] + '.mp3')) for l in LINES)  # one file per line (tools/tts_google_slim.py)
+    real = per_line or all(os.path.exists(os.path.join(SRC, s + '.mp3')) for s in {l[1] for l in LINES})
     takes = {}
-    if real:
+    if real and not per_line:
         for spk in sorted({l[1] for l in LINES}):
             takes[spk] = (load_mp3(os.path.join(SRC, spk + '.mp3')), split_lines(json.load(open(os.path.join(SRC, spk + '.words.json')))['words']))
     # place lines one after another
     plan, t = [], 0.0
     for lid, spk, idx, gap, text in LINES:
         t += gap
-        if real:
+        if per_line:
+            audio = load_mp3(os.path.join(SRC, 'lines', lid + '.mp3')); ws = [dict(w) for w in json.load(open(os.path.join(SRC, 'lines', lid + '.words.json')))['words']]
+            s0 = max(0.0, ws[0]['start'] - 0.06); s1 = min(len(audio) / SR, ws[-1]['end'] + 0.25)
+            rel = [dict(w, start=w['start'] - s0, end=w['end'] - s0) for w in ws]
+            plan.append((lid, spk, t, rel, audio[int(s0 * SR):int(s1 * SR)].copy())); t += s1 - s0
+        elif real:
             audio, lines = takes[spk]; ws = lines[idx]
             s0 = max(0.0, ws[0]['start'] - 0.06); s1 = min(len(audio) / SR, ws[-1]['end'] + 0.14)
             rel = [dict(w, start=w['start'] - s0, end=w['end'] - s0) for w in ws]

@@ -25,7 +25,7 @@ description: Cómo hacer los videos verticales (Reels/TikTok) de este repo con p
   2. **Pista de puros efectos** (MP3) de la misma duración que el video, empezando en 0:00, para alinearla en la app.
   3. **Tabla de tiempos** de efectos (`docs/efectos_<video>.md`), generada por el script de efectos.
   4. Voces solas si se piden.
-- Una voz de ElevenLabs por personaje. Mostrar guion y elenco al usuario antes de gastar créditos.
+- Una voz por personaje. Mostrar guion y elenco al usuario antes de gastar créditos. ElevenLabs ya no está disponible: usar Google Cloud Text-to-Speech (voces es-US, clave como network secret `X-Goog-Api-Key` para `texttospeech.googleapis.com`; ver `tools/tts_google_slim.py`) o voces grabadas por el usuario.
 
 ## Personajes y animación (`kit/charkit.js`)
 - Presets: rico, banquero, asalariado, gordo, jensen, trump, elon, king, duffy; `kit.townsperson(semilla)` para gente de fondo.
